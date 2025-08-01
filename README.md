@@ -1,6 +1,6 @@
 # Daggerfall Clone
 
-A multiplayer 3D dungeon crawler combining the best elements of classic g**Technical Implementation**
+A multiplayer 3D dungeon crawler combining the best elements of classic **Technical Implementation**
 
 **Combat System Architecture**
 - `PlayerController.gd`: Enhanced first-person controller with combat actions
@@ -84,6 +84,7 @@ A multiplayer 3D dungeon crawler combining the best elements of classic g**Techn
 **User Interface**
 - ✅ Always-visible HUD with Health/Mana/Stamina bars
 - ✅ Tabbed character menu (Stats/Equipment/Inventory)
+- ✅ Classic MMO-style cast bar with spell-specific colors and progress tracking
 - 🔄 Right-click context menus for item interactions
 - 🔄 Clean, functional UI design with dungeon crawler aesthetic
 
@@ -120,6 +121,8 @@ A multiplayer 3D dungeon crawler combining the best elements of classic g**Techn
 - `PlayerController.gd`: Enhanced first-person controller with combat actions
 - `AnimatedTarget.gd`: Advanced enemy AI with state machine (idle/patrol/pursue/attack/circle)
 - `Weapon.gd`: Base weapon class with timing and damage systems
+- `SpellSystem.gd`: Complete magic system with casting states and interruption handling
+- `PlayerHUD.gd`: Integrated cast bar with spell-specific colors and progress tracking
 - Area3D collision detection with proper layer masking
 - Tween-based weapon swing animations
 

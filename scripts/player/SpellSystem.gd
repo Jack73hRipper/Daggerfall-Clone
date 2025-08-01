@@ -21,6 +21,7 @@ enum CastState {
 # References
 var player_controller: PlayerController
 var character_stats: CharacterStats
+var player_hud: PlayerHUD  # Cast bar integration
 
 # Casting state
 var current_cast_state: CastState = CastState.READY
@@ -53,6 +54,28 @@ func _ready():
 	# Connect to damage events for spell interruption
 	if character_stats:
 		character_stats.health_changed.connect(_on_health_changed)
+
+func get_player_hud() -> PlayerHUD:
+	"""Get PlayerHUD reference dynamically"""
+	if player_hud and is_instance_valid(player_hud):
+		return player_hud
+	
+	# Try to find PlayerHUD
+	print("SpellSystem: Looking for PlayerHUD...")
+	player_hud = get_node("/root/Main/UI/PlayerHUD") if get_node_or_null("/root/Main/UI/PlayerHUD") else null
+	if not player_hud:
+		print("SpellSystem: PlayerHUD not found at /root/Main/UI/PlayerHUD, trying group...")
+		# Try alternative paths
+		var hud_nodes = get_tree().get_nodes_in_group("player_hud")
+		print("SpellSystem: Found ", hud_nodes.size(), " nodes in player_hud group")
+		player_hud = get_tree().get_first_node_in_group("player_hud") if hud_nodes.size() > 0 else null
+	
+	if player_hud:
+		print("SpellSystem: Successfully found PlayerHUD: ", player_hud)
+	else:
+		print("SpellSystem: ERROR - PlayerHUD not found! Cast bar will not work.")
+	
+	return player_hud
 
 func _process(delta):
 	update_casting(delta)
@@ -168,6 +191,14 @@ func begin_spell_cast(spell: Spell):
 	if player_controller:
 		player_controller.base_speed = original_move_speed * 0.5
 	
+	# Show cast bar
+	var hud = get_player_hud()
+	if hud:
+		print("SpellSystem: Showing cast bar for spell: ", spell.spell_name)
+		hud.show_cast_bar(spell.spell_name, spell.cast_time)
+	else:
+		print("SpellSystem: ERROR - Cannot show cast bar, player_hud is null!")
+	
 	# Start casting effects
 	play_casting_effects(spell)
 	
@@ -182,6 +213,12 @@ func update_casting(delta: float):
 	
 	casting_timer -= delta
 	
+	# Update cast bar progress
+	var hud = get_player_hud()
+	if hud and current_spell:
+		var progress = get_casting_progress()
+		hud.update_cast_bar_progress(progress, casting_timer)
+	
 	if casting_timer <= 0.0:
 		complete_spell_cast()
 
@@ -195,6 +232,11 @@ func complete_spell_cast():
 		emit_signal("spell_cast_completed", spell_name)
 		print("SpellSystem: Completed casting ", spell_name)
 		
+		# Show success effect on cast bar
+		var hud = get_player_hud()
+		if hud:
+			hud.show_cast_success_effect()
+		
 		current_spell = null
 	
 	# Reset casting state
@@ -206,6 +248,11 @@ func interrupt_spell_cast():
 		var spell_name = get_safe_spell_name(current_spell)
 		emit_signal("spell_cast_interrupted", spell_name)
 		print("SpellSystem: Spell casting interrupted: ", spell_name)
+		
+		# Show interruption effect on cast bar
+		var hud = get_player_hud()
+		if hud:
+			hud.show_cast_interrupt_effect()
 		
 		# Note: Mana is already spent - failed casts waste mana (design decision)
 		current_spell = null

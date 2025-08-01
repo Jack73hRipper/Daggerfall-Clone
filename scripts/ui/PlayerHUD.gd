@@ -14,18 +14,44 @@ extends Control
 @onready var mana_label: Label
 @onready var stamina_label: Label
 
+# Cast Bar Components
+var cast_bar_container: Control
+var cast_bar_background: ColorRect  # Changed from NinePatchRect to ColorRect
+var cast_bar_progress: ProgressBar
+var cast_bar_spell_name: Label
+var cast_bar_time_label: Label
+var cast_bar_interrupt_overlay: ColorRect
+
+# Cast Bar State
+var cast_bar_tween: Tween
+var is_cast_bar_visible: bool = false
+
 # Reference to character stats
 var character_stats: Resource  # Will be CharacterStats when loaded
 
 func _ready():
 	print("PlayerHUD _ready() called - HUD is being initialized")
+	
+	# Add to group for easy access by SpellSystem
+	add_to_group("player_hud")
+	
 	# Set up HUD positioning and style
 	setup_hud_layout()
+	
+	# Set up cast bar
+	setup_cast_bar()
 	
 	# Connect to pause mode so HUD stays visible
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	
+	# Connect to viewport size changes for cast bar repositioning
+	get_viewport().size_changed.connect(_on_viewport_size_changed)
+	
 	print("PlayerHUD setup complete")
+
+func _on_viewport_size_changed():
+	"""Reposition cast bar when window is resized"""
+	position_cast_bar()
 
 func setup_hud_layout():
 	"""Create HUD elements programmatically"""
@@ -239,3 +265,256 @@ func toggle_hud_visibility(should_show: bool):
 func get_hud_visibility() -> bool:
 	"""Check if HUD is visible"""
 	return visible
+
+func setup_cast_bar():
+	"""Create cast bar UI elements positioned under crosshair"""
+	print("PlayerHUD: Setting up cast bar")
+	
+	# Create cast bar container
+	cast_bar_container = Control.new()
+	cast_bar_container.name = "CastBarContainer"
+	cast_bar_container.size = Vector2(300, 50)
+	cast_bar_container.visible = false
+	cast_bar_container.z_index = 100  # Ensure it's on top
+	add_child(cast_bar_container)
+	
+	# Position container under crosshair (will be adjusted in position_cast_bar)
+	position_cast_bar()
+	
+	# Background panel
+	cast_bar_background = ColorRect.new()
+	cast_bar_background.name = "Background"
+	cast_bar_background.size = Vector2(300, 50)
+	cast_bar_background.color = Color(0.1, 0.1, 0.1, 0.9)
+	cast_bar_container.add_child(cast_bar_background)
+	
+	# Progress bar container
+	var progress_container = Control.new()
+	progress_container.name = "ProgressContainer"
+	progress_container.position = Vector2(10, 25)
+	progress_container.size = Vector2(200, 15)
+	cast_bar_container.add_child(progress_container)
+	
+	# Progress bar
+	cast_bar_progress = ProgressBar.new()
+	cast_bar_progress.name = "ProgressBar"
+	cast_bar_progress.size = Vector2(200, 15)
+	cast_bar_progress.min_value = 0.0
+	cast_bar_progress.max_value = 100.0
+	cast_bar_progress.value = 0.0
+	cast_bar_progress.show_percentage = false
+	
+	# Style the progress bar
+	var progress_bg = StyleBoxFlat.new()
+	progress_bg.bg_color = Color(0.2, 0.2, 0.2, 0.8)
+	cast_bar_progress.add_theme_stylebox_override("background", progress_bg)
+	
+	var progress_fill = StyleBoxFlat.new()
+	progress_fill.bg_color = Color.WHITE  # Will be changed per spell
+	cast_bar_progress.add_theme_stylebox_override("fill", progress_fill)
+	
+	progress_container.add_child(cast_bar_progress)
+	
+	# Spell name label
+	cast_bar_spell_name = Label.new()
+	cast_bar_spell_name.name = "SpellName"
+	cast_bar_spell_name.position = Vector2(10, 5)
+	cast_bar_spell_name.size = Vector2(200, 20)
+	cast_bar_spell_name.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	cast_bar_spell_name.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	cast_bar_spell_name.add_theme_font_size_override("font_size", 14)
+	cast_bar_spell_name.add_theme_color_override("font_color", Color.WHITE)
+	cast_bar_spell_name.text = ""
+	cast_bar_container.add_child(cast_bar_spell_name)
+	
+	# Time remaining label
+	cast_bar_time_label = Label.new()
+	cast_bar_time_label.name = "TimeLabel"
+	cast_bar_time_label.position = Vector2(220, 25)
+	cast_bar_time_label.size = Vector2(70, 15)
+	cast_bar_time_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	cast_bar_time_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	cast_bar_time_label.add_theme_font_size_override("font_size", 10)
+	cast_bar_time_label.add_theme_color_override("font_color", Color.WHITE)
+	cast_bar_time_label.text = ""
+	cast_bar_container.add_child(cast_bar_time_label)
+	
+	# Interruption overlay
+	cast_bar_interrupt_overlay = ColorRect.new()
+	cast_bar_interrupt_overlay.name = "InterruptOverlay"
+	cast_bar_interrupt_overlay.size = Vector2(300, 50)
+	cast_bar_interrupt_overlay.color = Color(1.0, 0.0, 0.0, 0.0)  # Transparent red initially
+	cast_bar_interrupt_overlay.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	cast_bar_container.add_child(cast_bar_interrupt_overlay)
+	
+	print("PlayerHUD: Cast bar setup complete")
+
+func position_cast_bar():
+	"""Position cast bar under crosshair"""
+	if not cast_bar_container:
+		return
+		
+	# Get screen center
+	var screen_size = get_viewport().get_visible_rect().size
+	var center_x = screen_size.x / 2
+	var center_y = screen_size.y / 2
+	
+	# Position: centered horizontally, 100px below center
+	cast_bar_container.position = Vector2(center_x - 150, center_y + 100)
+
+# CAST BAR METHODS
+
+func show_cast_bar(spell_name: String, duration: float):
+	"""Display cast bar for spell casting"""
+	print("PlayerHUD: show_cast_bar called for ", spell_name, " duration: ", duration)
+	
+	if is_cast_bar_visible:
+		print("PlayerHUD: Hiding previous cast bar")
+		hide_cast_bar_immediate()
+	
+	# Set spell data
+	cast_bar_spell_name.text = format_spell_name(spell_name)
+	update_cast_bar_colors(spell_name)
+	
+	# Reset progress
+	cast_bar_progress.value = 0.0
+	cast_bar_time_label.text = "%.1fs" % duration
+	
+	# Position and show
+	position_cast_bar()
+	cast_bar_container.visible = true
+	cast_bar_container.modulate = Color.TRANSPARENT
+	is_cast_bar_visible = true
+	
+	print("PlayerHUD: Cast bar positioned at: ", cast_bar_container.position)
+	print("PlayerHUD: Cast bar visible: ", cast_bar_container.visible)
+	print("PlayerHUD: Cast bar modulate: ", cast_bar_container.modulate)
+	
+	# Fade in animation (performance optimized)
+	if cast_bar_tween:
+		cast_bar_tween.kill()
+	cast_bar_tween = create_tween()
+	cast_bar_tween.tween_property(cast_bar_container, "modulate", Color.WHITE, 0.15)
+	
+	print("PlayerHUD: Cast bar setup complete")
+
+func update_cast_bar_progress(progress: float, time_remaining: float):
+	"""Update cast bar progress (0.0 to 1.0)"""
+	if not is_cast_bar_visible:
+		return
+		
+	cast_bar_progress.value = progress * 100.0
+	cast_bar_time_label.text = "%.1fs" % time_remaining
+
+func hide_cast_bar():
+	"""Hide cast bar with fade out"""
+	if not is_cast_bar_visible:
+		return
+	
+	if cast_bar_tween:
+		cast_bar_tween.kill()
+	cast_bar_tween = create_tween()
+	cast_bar_tween.tween_property(cast_bar_container, "modulate", Color.TRANSPARENT, 0.2)
+	cast_bar_tween.tween_callback(func(): 
+		cast_bar_container.visible = false
+		is_cast_bar_visible = false
+	)
+
+func hide_cast_bar_immediate():
+	"""Hide cast bar immediately without animation"""
+	if cast_bar_tween:
+		cast_bar_tween.kill()
+	cast_bar_container.visible = false
+	is_cast_bar_visible = false
+
+func show_cast_interrupt_effect():
+	"""Show red flash and shake effect for spell interruption"""
+	if not is_cast_bar_visible:
+		return
+	
+	# Red flash overlay
+	cast_bar_interrupt_overlay.color = Color(1.0, 0.0, 0.0, 0.6)
+	
+	# Flash animation
+	var flash_tween = create_tween()
+	flash_tween.tween_property(cast_bar_interrupt_overlay, "color", Color(1.0, 0.0, 0.0, 0.0), 0.3)
+	
+	# Shake effect (subtle for performance)
+	var original_pos = cast_bar_container.position
+	var shake_tween = create_tween()
+	shake_tween.parallel().tween_property(cast_bar_container, "position", original_pos + Vector2(3, 0), 0.03)
+	shake_tween.parallel().tween_property(cast_bar_container, "position", original_pos + Vector2(-3, 0), 0.06)
+	shake_tween.parallel().tween_property(cast_bar_container, "position", original_pos, 0.03)
+	
+	# Hide after interruption feedback
+	await flash_tween.finished
+	hide_cast_bar()
+
+func show_cast_success_effect():
+	"""Show subtle success feedback before hiding"""
+	if not is_cast_bar_visible:
+		return
+	
+	# Subtle green tint
+	var success_tween = create_tween()
+	success_tween.tween_property(cast_bar_container, "modulate", Color(0.9, 1.0, 0.9), 0.1)
+	success_tween.tween_property(cast_bar_container, "modulate", Color.WHITE, 0.1)
+	
+	await success_tween.finished
+	hide_cast_bar()
+
+func format_spell_name(spell_name: String) -> String:
+	"""Format spell names for display (remove underscores, etc.)"""
+	match spell_name:
+		"Magic_Missile":
+			return "MAGIC MISSILE"
+		"Fireball":
+			return "FIREBALL"
+		"Heal":
+			return "HEAL"
+		_:
+			return spell_name.replace("_", " ").to_upper()
+
+func update_cast_bar_colors(spell_name: String):
+	"""Update cast bar colors based on spell type"""
+	var colors = get_spell_colors(spell_name)
+	
+	# Update progress bar fill color
+	var progress_fill = StyleBoxFlat.new()
+	progress_fill.bg_color = colors.progress
+	cast_bar_progress.add_theme_stylebox_override("fill", progress_fill)
+	
+	# Update background color
+	cast_bar_background.color = colors.background
+	
+	# Update text colors
+	cast_bar_spell_name.add_theme_color_override("font_color", colors.text)
+	cast_bar_time_label.add_theme_color_override("font_color", colors.text)
+
+func get_spell_colors(spell_name: String) -> Dictionary:
+	"""Get color scheme for spell types"""
+	match spell_name:
+		"Fireball":
+			return {
+				"progress": Color(1.0, 0.4, 0.0),       # Orange
+				"background": Color(0.2, 0.1, 0.0, 0.9), # Dark orange bg
+				"text": Color(1.0, 0.9, 0.7)            # Light orange text
+			}
+		"Heal":
+			return {
+				"progress": Color(0.2, 0.8, 0.2),       # Green
+				"background": Color(0.0, 0.2, 0.0, 0.9), # Dark green bg
+				"text": Color(0.8, 1.0, 0.8)            # Light green text
+			}
+		"Magic_Missile":
+			return {
+				"progress": Color(0.3, 0.5, 1.0),       # Blue
+				"background": Color(0.0, 0.1, 0.2, 0.9), # Dark blue bg
+				"text": Color(0.8, 0.9, 1.0)            # Light blue text
+			}
+		_:
+			return {
+				"progress": Color.WHITE,
+				"background": Color(0.1, 0.1, 0.1, 0.9),
+				"text": Color.WHITE
+			}
