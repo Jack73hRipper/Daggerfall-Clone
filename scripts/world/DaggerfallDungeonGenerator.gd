@@ -140,8 +140,8 @@ func generate_dungeon():
 	print("=== Phase 4: 3D Building ===")
 	build_3d_geometry()
 	
-	print("=== Phase 5: Torch Placement ===")
-	place_dungeon_torches()
+	print("=== Phase 5: Wall-Mounted Torch Placement ===")
+	place_wall_mounted_torches()
 	
 	print("=== Phase 6: Enemy Spawning ===")
 	spawn_dungeon_enemies()
@@ -451,7 +451,15 @@ func create_floor_node() -> StaticBody3D:
 	mesh_instance.position.y = -0.1
 	
 	var material = StandardMaterial3D.new()
-	material.albedo_color = Color(0.4, 0.3, 0.2)  # Stone floor color
+	# Load wood floor texture
+	var floor_texture = load("res://assets/textures/materials/wood_floor.png")
+	if floor_texture:
+		material.albedo_texture = floor_texture
+		# Configure texture tiling for seamless floors
+		material.uv1_scale = Vector3(1.0, 1.0, 1.0)  # Adjust tiling as needed
+		material.texture_filter = BaseMaterial3D.TEXTURE_FILTER_LINEAR
+	else:
+		material.albedo_color = Color(0.4, 0.3, 0.2)  # Fallback stone floor color
 	mesh_instance.material_override = material
 	
 	floor_node.add_child(mesh_instance)
@@ -480,7 +488,15 @@ func create_wall_node(wall_height: float = 4.0) -> StaticBody3D:
 	mesh_instance.position.y = wall_height / 2.0  # Center the wall vertically
 	
 	var material = StandardMaterial3D.new()
-	material.albedo_color = Color(0.6, 0.5, 0.4)  # Stone wall color
+	# Load stone wall texture
+	var wall_texture = load("res://assets/textures/materials/stone_wall.png")
+	if wall_texture:
+		material.albedo_texture = wall_texture
+		# Configure texture tiling for seamless walls
+		material.uv1_scale = Vector3(1.0, 1.0, 1.0)  # Adjust tiling as needed
+		material.texture_filter = BaseMaterial3D.TEXTURE_FILTER_LINEAR
+	else:
+		material.albedo_color = Color(0.6, 0.5, 0.4)  # Fallback stone wall color
 	mesh_instance.material_override = material
 	
 	wall_node.add_child(mesh_instance)
@@ -569,14 +585,16 @@ func regenerate_dungeon():
 	generate_dungeon()
 
 # =============================================================================
-# TORCH LIGHTING SYSTEM
+# WALL-MOUNTED TORCH LIGHTING SYSTEM
+# Wall torches spawn with configurable percentage chance during wall creation
 # =============================================================================
 
 var torch_scene: PackedScene
 var total_torch_count: int = 0
+var torch_spawn_chance: float = 0.1  # 10% chance (1 in 10 walls) - Adjust this for more/fewer torches
 
-func place_dungeon_torches():
-	"""Phase 5: Place atmospheric torches throughout the dungeon"""
+func place_wall_mounted_torches():
+	"""Phase 5: Place wall-mounted sconce torches with percentage-based spawning"""
 	# Load torch scene
 	torch_scene = load("res://scenes/world/Torch.tscn")
 	if not torch_scene:
@@ -585,204 +603,112 @@ func place_dungeon_torches():
 	
 	total_torch_count = 0
 	
-	# Place torches in each room
-	for room in rooms:
-		place_room_torches(room)
+	# Go through all walls and potentially add torches
+	for x in range(dungeon_size.x):
+		for y in range(dungeon_size.y):
+			if grid[x][y] == WALL:
+				# Check if this wall should have a torch (percentage chance)
+				if randf() < torch_spawn_chance:
+					# Make sure there's at least one adjacent floor tile for proper mounting
+					if has_adjacent_floor(Vector2i(x, y)):
+						place_wall_sconce_torch(Vector2i(x, y))
 	
-	# Place corridor torches
-	place_corridor_torches()
-	
-	print("Placed ", total_torch_count, " atmospheric torches in dungeon")
+	print("Placed ", total_torch_count, " wall-mounted sconce torches (", 
+		  int(torch_spawn_chance * 100), "% spawn rate)")
 
-func place_room_torches(room: Room):
-	"""Place torches in a room using smart corner and doorway placement"""
-	var torch_positions: Array[Vector2i] = []
-	
-	# Step 1: Corner placement (highest priority)
-	var corner_positions = get_room_corner_positions(room)
-	var torch_count = get_room_torch_count(room.room_type)
-	
-	# Place torches in corners first
-	for i in range(min(torch_count, corner_positions.size())):
-		torch_positions.append(corner_positions[i])
-	
-	# Step 2: Add doorway lighting if we have room for more torches
-	if torch_positions.size() < torch_count:
-		var doorway_positions = get_room_doorway_positions(room)
-		for doorway_pos in doorway_positions:
-			if torch_positions.size() >= torch_count:
-				break
-			if not torch_positions.has(doorway_pos):
-				torch_positions.append(doorway_pos)
-	
-	# Step 3: Actually place the torches
-	for torch_pos in torch_positions:
-		place_torch_at_position(torch_pos, room.room_type)
-
-func get_room_corner_positions(room: Room) -> Array[Vector2i]:
-	"""Get valid corner positions for torch placement"""
-	var corners: Array[Vector2i] = []
-	var pos = room.position
-	var size = room.size
-	
-	# Interior corners (1 unit inside from walls)
-	var potential_corners = [
-		Vector2i(pos.x + 1, pos.y + 1),                    # Top-left
-		Vector2i(pos.x + size.x - 2, pos.y + 1),          # Top-right
-		Vector2i(pos.x + 1, pos.y + size.y - 2),          # Bottom-left
-		Vector2i(pos.x + size.x - 2, pos.y + size.y - 2)  # Bottom-right
+func has_adjacent_floor(wall_pos: Vector2i) -> bool:
+	"""Check if wall has at least one adjacent floor tile for proper torch mounting"""
+	# Check all 4 directions for floor tiles
+	var adjacent_positions = [
+		Vector2i(wall_pos.x, wall_pos.y - 1),  # North
+		Vector2i(wall_pos.x + 1, wall_pos.y),  # East
+		Vector2i(wall_pos.x, wall_pos.y + 1),  # South
+		Vector2i(wall_pos.x - 1, wall_pos.y)   # West
 	]
 	
-	# Only add corners that are valid floor positions
-	for corner in potential_corners:
-		if is_valid_torch_position(corner):
-			corners.append(corner)
+	var floor_count = 0
+	for pos in adjacent_positions:
+		if pos.x >= 0 and pos.x < dungeon_size.x and pos.y >= 0 and pos.y < dungeon_size.y:
+			if grid[pos.x][pos.y] == FLOOR:
+				floor_count += 1
 	
-	return corners
+	# Only place torches on walls with 1-3 adjacent floors (proper room walls)
+	# This prevents torches on isolated walls but allows most normal wall positions
+	return floor_count >= 1 and floor_count <= 3
 
-func get_room_doorway_positions(room: Room) -> Array[Vector2i]:
-	"""Get positions near doorways for torch placement"""
-	var doorway_positions: Array[Vector2i] = []
-	
-	# Find doorway positions by checking room perimeter for DOOR tiles
-	var pos = room.position
-	var size = room.size
-	
-	# Check all perimeter positions
-	for x in range(pos.x, pos.x + size.x):
-		for y in range(pos.y, pos.y + size.y):
-			# Check if this is near a door
-			var check_positions = [
-				Vector2i(x, pos.y - 1),     # North wall
-				Vector2i(x, pos.y + size.y), # South wall
-				Vector2i(pos.x - 1, y),     # West wall
-				Vector2i(pos.x + size.x, y) # East wall
-			]
-			
-			for check_pos in check_positions:
-				if is_door_at_position(check_pos):
-					# Place torch 2 units away from door, inside room
-					var torch_pos = Vector2i(x, y)
-					if is_valid_torch_position(torch_pos) and not doorway_positions.has(torch_pos):
-						doorway_positions.append(torch_pos)
-	
-	return doorway_positions
-
-func get_room_torch_count(room_type: RoomType) -> int:
-	"""Get appropriate number of torches for room type"""
-	match room_type:
-		RoomType.SMALL_CHAMBER:
-			return randi_range(1, 2)  # Minimal lighting
-		RoomType.LARGE_CHAMBER:
-			return randi_range(3, 4)  # Well-lit
-		RoomType.HALLWAY:
-			return randi_range(1, 2)  # Sparse corridor lighting
-		RoomType.SIDE_ROOM:
-			return randi_range(1, 2)  # Basic illumination
-		RoomType.BOSS_ROOM:
-			return randi_range(4, 6)  # Dramatic lighting
-	return 1
-
-func place_corridor_torches():
-	"""Place torches in corridors for navigation lighting"""
-	for corridor in corridors:
-		# Place torch at corridor midpoints for longer corridors
-		if corridor.path_points.size() >= 3:
-			var mid_point = corridor.path_points[1]  # Corner of L-shaped corridor
-			if is_valid_torch_position(mid_point):
-				place_torch_at_position(mid_point, RoomType.HALLWAY)
-
-func place_torch_at_position(grid_pos: Vector2i, room_type: RoomType):
-	"""Place a torch at the specified grid position"""
+func place_wall_sconce_torch(wall_pos: Vector2i):
+	"""Place a wall-mounted sconce torch on the specified wall"""
 	if not torch_scene:
 		return
 	
-	# Convert grid position to world position
-	var world_pos = Vector3(grid_pos.x * TILE_SIZE, 0, grid_pos.y * TILE_SIZE)
+	# Convert grid position to world position (center of wall tile)
+	var world_pos = Vector3(wall_pos.x * TILE_SIZE, 0, wall_pos.y * TILE_SIZE)
 	
-	# Find adjacent wall for proper torch orientation
-	var wall_direction = find_adjacent_wall_direction(grid_pos)
+	# Find which direction the torch should face (towards adjacent floor)
+	var torch_direction = find_torch_facing_direction(wall_pos)
 	
 	# Create torch instance
 	var torch_instance = torch_scene.instantiate()
-	torch_instance.position = world_pos + get_torch_wall_offset(wall_direction)
-	torch_instance.rotation = get_torch_rotation(wall_direction)
 	
-	# Adjust light intensity based on room type
-	adjust_torch_intensity(torch_instance, room_type)
+	# Position torch on the wall surface facing the room (not inside the wall)
+	var wall_surface_offset = get_wall_surface_offset(torch_direction)
+	torch_instance.position = world_pos + Vector3(0, 2.0, 0) + wall_surface_offset
+	
+	# Rotate torch to face into the room/corridor
+	torch_instance.rotation = get_wall_sconce_rotation(torch_direction)
 	
 	add_child(torch_instance)
 	total_torch_count += 1
 
-func find_adjacent_wall_direction(pos: Vector2i) -> WallDirection:
-	"""Find the direction of the nearest wall for torch mounting"""
-	var directions = [
-		{dir = WallDirection.NORTH, check = Vector2i(0, -1)},
-		{dir = WallDirection.EAST, check = Vector2i(1, 0)},
-		{dir = WallDirection.SOUTH, check = Vector2i(0, 1)},
-		{dir = WallDirection.WEST, check = Vector2i(-1, 0)}
+func find_torch_facing_direction(wall_pos: Vector2i) -> WallDirection:
+	"""Find which direction the torch should face using priority-based selection for consistency"""
+	# Check directions in priority order: North, East, South, West (deterministic)
+	# Face TOWARD the floor (into the dungeon interior), not away from it
+	var priority_directions = [
+		{dir = WallDirection.NORTH, check = Vector2i(0, -1)},   # Floor to north = face north
+		{dir = WallDirection.EAST, check = Vector2i(1, 0)},     # Floor to east = face east  
+		{dir = WallDirection.SOUTH, check = Vector2i(0, 1)},    # Floor to south = face south
+		{dir = WallDirection.WEST, check = Vector2i(-1, 0)}     # Floor to west = face west
 	]
 	
-	for direction in directions:
-		var check_pos = pos + direction.check
-		if is_wall_at_position(check_pos):
-			return direction.dir
+	# Return the FIRST valid direction found (ensures consistency)
+	for direction in priority_directions:
+		var check_pos = wall_pos + direction.check
+		if check_pos.x >= 0 and check_pos.x < dungeon_size.x and check_pos.y >= 0 and check_pos.y < dungeon_size.y:
+			if grid[check_pos.x][check_pos.y] == FLOOR:
+				return direction.dir
 	
-	return WallDirection.NORTH  # Default
+	return WallDirection.SOUTH  # Default if no floor found
 
-func get_torch_wall_offset(wall_direction: WallDirection) -> Vector3:
-	"""Get the offset from floor center to mount torch on wall"""
-	var offset = Vector3(0, 1.5, 0)  # Base height offset
-	
-	match wall_direction:
+func get_wall_sconce_rotation(facing_direction: WallDirection) -> Vector3:
+	"""Get rotation for wall-mounted torch to face into room/corridor"""
+	match facing_direction:
 		WallDirection.NORTH:
-			offset += Vector3(0, 0, -0.8)  # Closer to north wall
-		WallDirection.SOUTH:
-			offset += Vector3(0, 0, 0.8)   # Closer to south wall
+			return Vector3(0, 0, 0)        # Face north into room
+		WallDirection.SOUTH: 
+			return Vector3(0, PI, 0)       # Face south into room
 		WallDirection.EAST:
-			offset += Vector3(0.8, 0, 0)   # Closer to east wall
+			return Vector3(0, PI/2, 0)     # Face east into room
 		WallDirection.WEST:
-			offset += Vector3(-0.8, 0, 0)  # Closer to west wall
-	
-	return offset
-
-func get_torch_rotation(wall_direction: WallDirection) -> Vector3:
-	"""Get the rotation for torch to face away from wall"""
-	match wall_direction:
-		WallDirection.NORTH:
-			return Vector3(0, 0, 0)      # Face south
-		WallDirection.SOUTH:
-			return Vector3(0, PI, 0)     # Face north
-		WallDirection.EAST:
-			return Vector3(0, -PI/2, 0)  # Face west
-		WallDirection.WEST:
-			return Vector3(0, PI/2, 0)   # Face east
+			return Vector3(0, -PI/2, 0)    # Face west into room
 	return Vector3.ZERO
 
-func adjust_torch_intensity(torch_instance: Node3D, room_type: RoomType):
-	"""Adjust torch light intensity based on room importance"""
-	var flame_light = torch_instance.get_node("FlameLight")
-	if not flame_light:
-		return
+func get_wall_surface_offset(facing_direction: WallDirection) -> Vector3:
+	"""Get offset to position torch on interior wall surface facing into dungeon"""
+	# Offset must be greater than half wall thickness (1.0) to clear the wall
+	var surface_offset = TILE_SIZE * 0.6  # 0.6 = 1.2 units - outside wall thickness
 	
-	var base_intensity = flame_light.light_energy
-	match room_type:
-		RoomType.BOSS_ROOM:
-			flame_light.light_energy = base_intensity * 1.5  # Bright, dramatic
-		RoomType.LARGE_CHAMBER:
-			flame_light.light_energy = base_intensity * 1.2  # Well-lit
-		RoomType.SMALL_CHAMBER:
-			flame_light.light_energy = base_intensity        # Standard
-		RoomType.SIDE_ROOM:
-			flame_light.light_energy = base_intensity * 0.8  # Dim
-		RoomType.HALLWAY:
-			flame_light.light_energy = base_intensity * 0.7  # Minimal corridor lighting
-
-func is_valid_torch_position(pos: Vector2i) -> bool:
-	"""Check if position is valid for torch placement"""
-	if pos.x < 0 or pos.x >= dungeon_size.x or pos.y < 0 or pos.y >= dungeon_size.y:
-		return false
-	return grid[pos.x][pos.y] == FLOOR
+	# Move torch to the interior side of the wall (opposite to facing direction)
+	match facing_direction:
+		WallDirection.NORTH:
+			return Vector3(0, 0, surface_offset)   # Wall faces north, torch on south side (interior)
+		WallDirection.SOUTH:
+			return Vector3(0, 0, -surface_offset)  # Wall faces south, torch on north side (interior) 
+		WallDirection.EAST:
+			return Vector3(-surface_offset, 0, 0)  # Wall faces east, torch on west side (interior)
+		WallDirection.WEST:
+			return Vector3(surface_offset, 0, 0)   # Wall faces west, torch on east side (interior)
+	return Vector3.ZERO
 
 func is_wall_at_position(pos: Vector2i) -> bool:
 	"""Check if there's a wall at the given position"""

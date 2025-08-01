@@ -48,6 +48,10 @@ var current_health: int = 100  # Will be overridden by character_stats
 var is_sprinting: bool = false
 var can_jump: bool = true
 
+# Debug noclip mode
+var noclip_enabled: bool = false
+var noclip_speed: float = 10.0
+
 # Interaction system
 var nearby_items: Array = []
 var carried_item: Node = null  # Will be BaseItem when picked up
@@ -97,6 +101,10 @@ func _input(event: InputEvent) -> void:
 	# Debug input handling
 	if event.is_action_pressed("debug_damage"):
 		take_damage(10)  # Test damage for HUD
+	
+	# Noclip toggle (F3 key for debugging)
+	if event is InputEventKey and event.pressed and event.keycode == KEY_F3:
+		toggle_noclip()
 	
 	if event.is_action_pressed("character_menu"):
 		print("Character menu key pressed - handled by TestSceneController")
@@ -162,8 +170,12 @@ func handle_input() -> void:
 				print("WALKING: Speed back to ", base_speed)
 	
 	# Handle jump
-	if Input.is_action_just_pressed("jump") and is_on_floor():
-		velocity.y = jump_velocity
+	if Input.is_action_just_pressed("jump"):
+		if noclip_enabled:
+			# In noclip mode, use jump for upward movement (handled in handle_movement)
+			pass
+		elif is_on_floor():
+			velocity.y = jump_velocity
 	
 	# Handle attack
 	if Input.is_action_just_pressed("attack") and not is_attacking and current_weapon:
@@ -185,7 +197,51 @@ func handle_mouse_look(mouse_delta: Vector2) -> void:
 		# Clamp vertical look to prevent over-rotation
 		head.rotation.x = clamp(head.rotation.x, -vertical_look_limit, vertical_look_limit)
 
+func toggle_noclip() -> void:
+	"""Toggle noclip mode for debugging torch placement"""
+	noclip_enabled = !noclip_enabled
+	
+	if noclip_enabled:
+		print("NOCLIP ENABLED - Press F3 to disable, use WASD + Space/Shift to fly")
+		# Disable collision with world geometry
+		set_collision_mask_value(1, false)
+	else:
+		print("NOCLIP DISABLED - Normal collision restored")
+		# Restore collision with world geometry
+		set_collision_mask_value(1, true)
+		# Reset velocity to prevent floating
+		velocity = Vector3.ZERO
+
 func handle_movement(delta: float) -> void:
+	"""Handle movement with noclip support"""
+	if noclip_enabled:
+		handle_noclip_movement(delta)
+	else:
+		handle_normal_movement(delta)
+
+func handle_noclip_movement(delta: float) -> void:
+	"""Handle 3D flying movement in noclip mode"""
+	var target_velocity: Vector3 = Vector3.ZERO
+	
+	if input_vector.length() > 0 or Input.is_action_pressed("jump") or Input.is_action_pressed("sprint"):
+		# Get movement vectors
+		var forward: Vector3 = -transform.basis.z
+		var right: Vector3 = transform.basis.x
+		
+		# Horizontal movement
+		var horizontal_movement = (forward * input_vector.y + right * input_vector.x).normalized()
+		target_velocity = horizontal_movement * noclip_speed
+		
+		# Vertical movement (Space to go up, Shift to go down)
+		if Input.is_action_pressed("jump"):
+			target_velocity.y = noclip_speed
+		elif Input.is_action_pressed("sprint"):  # Using sprint as "down" key
+			target_velocity.y = -noclip_speed
+	
+	# Smooth movement with acceleration
+	velocity = velocity.move_toward(target_velocity, acceleration * 2.0 * delta)
+
+func handle_normal_movement(delta: float) -> void:
 	"""Handle horizontal movement with acceleration and friction"""
 	# Calculate target velocity based on input and player orientation
 	var target_velocity: Vector3 = Vector3.ZERO
@@ -217,8 +273,8 @@ func handle_movement(delta: float) -> void:
 	velocity.z = horizontal_velocity.z
 
 func handle_gravity(delta: float) -> void:
-	"""Apply gravity to the player"""
-	if not is_on_floor():
+	"""Apply gravity to the player (skip in noclip mode)"""
+	if not noclip_enabled and not is_on_floor():
 		velocity.y -= gravity * delta
 
 func handle_stamina_system(delta: float) -> void:
