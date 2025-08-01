@@ -61,19 +61,11 @@ func get_player_hud() -> PlayerHUD:
 		return player_hud
 	
 	# Try to find PlayerHUD
-	print("SpellSystem: Looking for PlayerHUD...")
 	player_hud = get_node("/root/Main/UI/PlayerHUD") if get_node_or_null("/root/Main/UI/PlayerHUD") else null
 	if not player_hud:
-		print("SpellSystem: PlayerHUD not found at /root/Main/UI/PlayerHUD, trying group...")
 		# Try alternative paths
 		var hud_nodes = get_tree().get_nodes_in_group("player_hud")
-		print("SpellSystem: Found ", hud_nodes.size(), " nodes in player_hud group")
 		player_hud = get_tree().get_first_node_in_group("player_hud") if hud_nodes.size() > 0 else null
-	
-	if player_hud:
-		print("SpellSystem: Successfully found PlayerHUD: ", player_hud)
-	else:
-		print("SpellSystem: ERROR - PlayerHUD not found! Cast bar will not work.")
 	
 	return player_hud
 
@@ -194,10 +186,7 @@ func begin_spell_cast(spell: Spell):
 	# Show cast bar
 	var hud = get_player_hud()
 	if hud:
-		print("SpellSystem: Showing cast bar for spell: ", spell.spell_name)
 		hud.show_cast_bar(spell.spell_name, spell.cast_time)
-	else:
-		print("SpellSystem: ERROR - Cannot show cast bar, player_hud is null!")
 	
 	# Start casting effects
 	play_casting_effects(spell)

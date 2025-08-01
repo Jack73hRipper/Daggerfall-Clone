@@ -366,10 +366,7 @@ func position_cast_bar():
 
 func show_cast_bar(spell_name: String, duration: float):
 	"""Display cast bar for spell casting"""
-	print("PlayerHUD: show_cast_bar called for ", spell_name, " duration: ", duration)
-	
 	if is_cast_bar_visible:
-		print("PlayerHUD: Hiding previous cast bar")
 		hide_cast_bar_immediate()
 	
 	# Set spell data
@@ -386,17 +383,11 @@ func show_cast_bar(spell_name: String, duration: float):
 	cast_bar_container.modulate = Color.TRANSPARENT
 	is_cast_bar_visible = true
 	
-	print("PlayerHUD: Cast bar positioned at: ", cast_bar_container.position)
-	print("PlayerHUD: Cast bar visible: ", cast_bar_container.visible)
-	print("PlayerHUD: Cast bar modulate: ", cast_bar_container.modulate)
-	
 	# Fade in animation (performance optimized)
 	if cast_bar_tween:
 		cast_bar_tween.kill()
 	cast_bar_tween = create_tween()
 	cast_bar_tween.tween_property(cast_bar_container, "modulate", Color.WHITE, 0.15)
-	
-	print("PlayerHUD: Cast bar setup complete")
 
 func update_cast_bar_progress(progress: float, time_remaining: float):
 	"""Update cast bar progress (0.0 to 1.0)"""
