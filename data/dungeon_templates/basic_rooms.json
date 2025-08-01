@@ -1,0 +1,152 @@
+{
+  "room_templates": {
+    "small_chamber": {
+      "name": "Small Chamber",
+      "size": [6, 6],
+      "type": "chamber",
+      "layout": [
+        "WWWWWW",
+        "W....W",
+        "W....W", 
+        "W....W",
+        "W....W",
+        "WWWWWW"
+      ],
+      "spawn_points": [
+        {"x": 2, "y": 2, "type": "item"},
+        {"x": 4, "y": 3, "type": "enemy"}
+      ],
+      "connections": [
+        {"x": 3, "y": 0, "direction": "north"},
+        {"x": 3, "y": 5, "direction": "south"}
+      ]
+    },
+    "large_chamber": {
+      "name": "Large Chamber",
+      "size": [10, 8],
+      "type": "chamber",
+      "layout": [
+        "WWWWWWWWWW",
+        "W........W",
+        "W........W",
+        "W...PP...W",
+        "W...PP...W", 
+        "W........W",
+        "W........W",
+        "WWWWWWWWWW"
+      ],
+      "spawn_points": [
+        {"x": 2, "y": 2, "type": "item"},
+        {"x": 7, "y": 2, "type": "item"},
+        {"x": 2, "y": 5, "type": "enemy"},
+        {"x": 7, "y": 5, "type": "enemy"},
+        {"x": 5, "y": 4, "type": "treasure"}
+      ],
+      "connections": [
+        {"x": 5, "y": 0, "direction": "north"},
+        {"x": 5, "y": 7, "direction": "south"},
+        {"x": 0, "y": 4, "direction": "west"},
+        {"x": 9, "y": 4, "direction": "east"}
+      ]
+    },
+    "corridor_horizontal": {
+      "name": "Horizontal Corridor",
+      "size": [8, 3],
+      "type": "corridor",
+      "layout": [
+        "WWWWWWWW",
+        "........",
+        "WWWWWWWW"
+      ],
+      "spawn_points": [
+        {"x": 4, "y": 1, "type": "trap"}
+      ],
+      "connections": [
+        {"x": 0, "y": 1, "direction": "west"},
+        {"x": 7, "y": 1, "direction": "east"}
+      ]
+    },
+    "corridor_vertical": {
+      "name": "Vertical Corridor", 
+      "size": [3, 8],
+      "type": "corridor",
+      "layout": [
+        "W.W",
+        "W.W",
+        "W.W",
+        "W.W",
+        "W.W",
+        "W.W",
+        "W.W",
+        "W.W"
+      ],
+      "spawn_points": [
+        {"x": 1, "y": 4, "type": "trap"}
+      ],
+      "connections": [
+        {"x": 1, "y": 0, "direction": "north"},
+        {"x": 1, "y": 7, "direction": "south"}
+      ]
+    },
+    "treasure_room": {
+      "name": "Treasure Chamber",
+      "size": [8, 6],
+      "type": "treasure",
+      "layout": [
+        "WWWWWWWW",
+        "W......W",
+        "W..TT..W",
+        "W..TT..W",
+        "W......W",
+        "WWWWWWWW"
+      ],
+      "spawn_points": [
+        {"x": 3, "y": 2, "type": "treasure"},
+        {"x": 4, "y": 2, "type": "treasure"},
+        {"x": 3, "y": 3, "type": "treasure"},
+        {"x": 4, "y": 3, "type": "treasure"},
+        {"x": 2, "y": 4, "type": "enemy"},
+        {"x": 5, "y": 4, "type": "enemy"}
+      ],
+      "connections": [
+        {"x": 4, "y": 5, "direction": "south"}
+      ]
+    },
+    "entrance_room": {
+      "name": "Entrance Hall",
+      "size": [6, 8],
+      "type": "entrance",
+      "layout": [
+        "WWWWWW",
+        "W....W",
+        "W....W",
+        "W....W",
+        "W....W",
+        "W....W",
+        "W....W",
+        "WWWWWW"
+      ],
+      "spawn_points": [
+        {"x": 3, "y": 6, "type": "player_start"}
+      ],
+      "connections": [
+        {"x": 3, "y": 0, "direction": "north"}
+      ]
+    }
+  },
+  "tile_legend": {
+    "W": "wall",
+    ".": "floor",
+    "P": "pillar",
+    "T": "treasure_marker",
+    "D": "door",
+    "S": "stairs"
+  },
+  "generation_rules": {
+    "min_rooms": 8,
+    "max_rooms": 15,
+    "treasure_room_chance": 0.3,
+    "dead_end_chance": 0.2,
+    "corridor_branch_chance": 0.4
+  }
+}

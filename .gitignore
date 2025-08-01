@@ -1,0 +1,84 @@
+# Godot-specific ignores
+.godot/
+.import/
+export_presets.cfg
+/android/
+/ios/
+export.cfg
+
+# Temporary files
+*.tmp
+*.temp
+
+# Logs and crash reports
+logs/
+*.log
+crashes/
+crash_logs/
+
+# Build artifacts
+builds/
+dist/
+
+# Asset management - Ignore large unorganized asset packs to prevent git bloat
+# Keep only our organized asset folders
+assets/3d/Animated Monster Pack by @Quaternius/
+assets/3d/KayKit_Skeletons_1.0_FREE/
+assets/3d/Ultimate RPG Items Pack - Aug 2019/
+assets/3d/Ultimate Modular Ruins Pack - Aug 2021/
+assets/3d/RPG Characters - Nov 2020/
+
+# But keep our organized asset folders (these should be tracked)
+!assets/3d/monsters/
+!assets/3d/weapons/
+!assets/3d/characters/
+!assets/3d/items/
+!assets/3d/environment/
+!assets/3d/effects/
+!assets/audio/
+!assets/textures/
+
+# OS-specific files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+desktop.ini
+
+# IDE-specific files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# User-specific files
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+
+# Build results
+[Dd]ebug/
+[Dd]ebugPublic/
+[Rr]elease/
+[Rr]eleases/
+x64/
+x86/
+build/
+bld/
+[Bb]in/
+[Oo]bj/
+
+# Backup files
+*.bak
+*.backup
+*~
+*.orig
+
+# Project-specific temporary files
+*.tscn.tmp
+*.gd.tmp

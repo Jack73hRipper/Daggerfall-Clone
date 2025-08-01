@@ -1,0 +1,18 @@
+[gd_scene load_steps=4 format=3 uid="uid://c8lan5m4j7w2e"]
+
+[ext_resource type="Script" path="res://scripts/enemies/AnimatedTarget.gd" id="1_enemy_script"]
+[ext_resource type="PackedScene" uid="uid://bipwlhrw48r4e" path="res://assets/3d/RPG Characters - Nov 2020/glTF/Warrior.gltf" id="2_warrior_model"]
+
+[sub_resource type="CapsuleShape3D" id="CapsuleShape3D_1"]
+radius = 0.5
+height = 2.0
+
+[node name="WarriorTarget" type="StaticBody3D"]
+script = ExtResource("1_enemy_script")
+
+[node name="WarriorModel" parent="." instance=ExtResource("2_warrior_model")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0)
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.4, 0)
+shape = SubResource("CapsuleShape3D_1")

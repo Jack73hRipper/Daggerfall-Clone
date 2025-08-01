@@ -1,0 +1,59 @@
+{
+  "game": {
+    "version": "0.1.0-alpha",
+    "difficulty": 1,
+    "max_players": 4,
+    "friendly_fire": false
+  },
+  "graphics": {
+    "resolution": {
+      "width": 1920,
+      "height": 1080
+    },
+    "fullscreen": false,
+    "vsync": true,
+    "max_fps": 60,
+    "pixel_filter": false,
+    "shadows": true,
+    "texture_quality": "high"
+  },
+  "audio": {
+    "master_volume": 0.8,
+    "music_volume": 0.6,
+    "sfx_volume": 0.8,
+    "voice_volume": 0.9
+  },
+  "controls": {
+    "mouse_sensitivity": 1.0,
+    "invert_y": false,
+    "keybinds": {
+      "move_forward": "W",
+      "move_backward": "S", 
+      "move_left": "A",
+      "move_right": "D",
+      "jump": "Space",
+      "run": "Shift",
+      "crouch": "Ctrl",
+      "interact": "E",
+      "attack": "Mouse1",
+      "block": "Mouse2",
+      "inventory": "Tab",
+      "pause": "Escape",
+      "hotkey_1": "1",
+      "hotkey_2": "2",
+      "hotkey_3": "3",
+      "hotkey_4": "4",
+      "hotkey_5": "5",
+      "hotkey_6": "6",
+      "hotkey_7": "7",
+      "hotkey_8": "8",
+      "hotkey_9": "9",
+      "hotkey_10": "0"
+    }
+  },
+  "network": {
+    "default_port": 7777,
+    "timeout": 30,
+    "max_packet_size": 1024
+  }
+}

@@ -1,0 +1,100 @@
+{
+  "weapons": {
+    "iron_sword": {
+      "name": "Iron Sword",
+      "type": "weapon",
+      "weapon_type": "sword",
+      "damage": 8,
+      "damage_type": "physical",
+      "weight": 3.0,
+      "durability": 100,
+      "value": 50,
+      "rarity": "common",
+      "sprite_path": "assets/sprites/items/weapons/iron_sword.png",
+      "description": "A sturdy iron sword. Reliable and well-balanced."
+    },
+    "wooden_bow": {
+      "name": "Wooden Bow",
+      "type": "weapon", 
+      "weapon_type": "bow",
+      "damage": 6,
+      "damage_type": "physical",
+      "weight": 2.0,
+      "durability": 80,
+      "value": 30,
+      "rarity": "common",
+      "sprite_path": "assets/sprites/items/weapons/wooden_bow.png",
+      "description": "A simple wooden bow. Good for hunting small game."
+    }
+  },
+  "armor": {
+    "leather_helmet": {
+      "name": "Leather Helmet",
+      "type": "armor",
+      "armor_type": "helmet",
+      "defense": 2,
+      "weight": 1.5,
+      "durability": 60,
+      "value": 25,
+      "rarity": "common",
+      "sprite_path": "assets/sprites/items/armor/leather_helmet.png",
+      "description": "Basic leather protection for the head."
+    },
+    "iron_chestplate": {
+      "name": "Iron Chestplate",
+      "type": "armor",
+      "armor_type": "chest",
+      "defense": 8,
+      "weight": 12.0,
+      "durability": 120,
+      "value": 150,
+      "rarity": "common",
+      "sprite_path": "assets/sprites/items/armor/iron_chestplate.png",
+      "description": "Heavy iron armor that provides excellent protection."
+    }
+  },
+  "consumables": {
+    "health_potion": {
+      "name": "Health Potion",
+      "type": "consumable",
+      "effect": "heal",
+      "effect_value": 50,
+      "weight": 0.5,
+      "value": 25,
+      "rarity": "common",
+      "sprite_path": "assets/sprites/items/consumables/health_potion.png",
+      "description": "A red potion that restores health when consumed."
+    },
+    "bread": {
+      "name": "Bread",
+      "type": "consumable",
+      "effect": "heal",
+      "effect_value": 10,
+      "weight": 0.3,
+      "value": 5,
+      "rarity": "common",
+      "sprite_path": "assets/sprites/items/consumables/bread.png",
+      "description": "Simple bread. Provides a small amount of healing."
+    }
+  },
+  "materials": {
+    "iron_ore": {
+      "name": "Iron Ore",
+      "type": "material",
+      "weight": 2.0,
+      "value": 10,
+      "rarity": "common",
+      "sprite_path": "assets/sprites/items/materials/iron_ore.png",
+      "description": "Raw iron ore. Can be smelted into iron ingots."
+    },
+    "leather": {
+      "name": "Leather",
+      "type": "material",
+      "weight": 0.8,
+      "value": 8,
+      "rarity": "common",
+      "sprite_path": "assets/sprites/items/materials/leather.png",
+      "description": "Treated animal hide. Useful for crafting armor."
+    }
+  }
+}

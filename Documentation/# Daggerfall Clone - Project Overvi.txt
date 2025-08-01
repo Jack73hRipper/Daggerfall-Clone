@@ -1,0 +1,361 @@
+# Daggerfall Clone - Project Overview
+
+## Core Concept
+A multiplayer 3D dungeon crawler combining the best elements of classic games:
+- **Daggerfall**: Procedural dungeons, exploration focus
+- **Doom**: Responsive movement and combat feel  
+- **Caves of Qud**: Creative character progression systems
+- **Barony**: Physics-based interactions, cooperative multiplayer
+
+## Key Features
+
+### Movement & Combat
+- Doom-style responsive controls but slightly slower paced
+- Somewhere between Daggerfall's deliberate pace and Doom's speed
+- Physics-based environmental interactions
+- Satisfying, tactical combat encounters
+
+### Multiplayer
+- 4 players maximum
+- Self-hosted games (one player acts as server)
+- Group progression - all players must be together to advance floors
+- Cooperative gameplay with natural role specialization
+
+### Dungeon Design
+- Procedural generation with variety
+- Mix of open chambers and maze-like corridors
+- Dead ends, hidden passages, and meaningful traps
+- Multi-floor dungeons with group-based progression
+- Vertical elements and interconnected spaces
+
+### Loot System
+- Deliberate, significant item drops (not loot spam)
+- Free-for-all looting with expectation of friend cooperation
+- Physical item interaction - see and handle everything
+- Weight and durability systems matter
+- Players can drop/trade items freely
+- Individual item weights with carrying capacity based on STR
+
+### Character System
+- D&D 5E stat system (STR, DEX, CON, INT, WIS, CHA)
+- Natural party roles through stat specialization
+- STR characters become group "pack mules"
+- Shared wealth and group economic decisions
+- Character progression system (details TBD)
+
+### Visual Style
+- Low-poly, pixelated graphics
+- Simple geometric shapes and small pixel art textures
+- Classic 90s dungeon crawler aesthetic
+
+**Art Asset Approach:**
+- **Architecture**: Simple BoxMesh/geometric shapes with 2D sprite textures mapped onto them
+- **Items/Pickups**: Sprite3D billboards for fast creation and authentic retro feel
+- **Interactive Objects**: Basic 3D shapes (cylinders for barrels, boxes for chests) with sprite textures
+- **Players & Enemies**: Isometric sprites adapted for 3D using existing dark fantasy sprite sheets
+  - Fixed rotation approach: Place sprites at consistent angle in 3D space matching isometric perspective
+  - Angle-switching approach: Switch sprite frames based on camera/player relative position
+  - Isometric perspective works well in first-person view due to elevated viewing angle
+  - Simple capsule collision shapes for physics regardless of sprite complexity
+- **Environmental Tiles**: Extract color schemes and style elements from isometric tiles rather than direct usage
+- Consistent texture resolution from existing sprite sheets and limited color palette for visual cohesion
+
+## Project Structure & Version Control
+
+### Git Repository Setup
+**Repository Name:** `daggerfall-clone` or `dungeon-crawler-mp`
+
+**Branch Strategy:**
+- `main` - Production ready builds
+- `develop` - Integration branch for features
+- `feature/[feature-name]` - Individual feature branches
+- `hotfix/[issue]` - Critical bug fixes
+
+**Git Workflow:**
+1. Create feature branch from `develop`
+2. Implement feature with regular commits
+3. Pull request to `develop` with code review
+4. Merge to `main` only for releases/milestones
+
+### Godot Project Folder Structure
+```
+DaggerfallClone/
+├── .git/
+├── .gitignore                 # Godot-specific gitignore
+├── project.godot              # Main project file
+├── README.md                  # Project documentation
+├── 
+├── scenes/                    # All scene files (.tscn)
+│   ├── main/
+│   │   ├── Main.tscn         # Main game scene
+│   │   └── GameManager.tscn   # Networking/game state management
+│   ├── player/
+│   │   ├── Player.tscn       # Player character
+│   │   └── PlayerController.tscn
+│   ├── ui/
+│   │   ├── MainMenu.tscn
+│   │   ├── Inventory.tscn
+│   │   └── HUD.tscn
+│   ├── world/
+│   │   ├── DungeonRoom.tscn
+│   │   ├── DungeonCorridor.tscn
+│   │   └── DungeonGenerator.tscn
+│   ├── items/
+│   │   ├── BaseItem.tscn
+│   │   ├── Weapon.tscn
+│   │   └── Armor.tscn
+│   └── enemies/
+│       ├── BaseEnemy.tscn
+│       └── Skeleton.tscn
+│
+├── scripts/                   # All GDScript files (.gd)
+│   ├── autoload/             # Singleton scripts
+│   │   ├── GameManager.gd    # Global game state
+│   │   ├── NetworkManager.gd # Multiplayer handling
+│   │   └── Constants.gd      # Game constants
+│   ├── player/
+│   │   ├── PlayerController.gd
+│   │   ├── PlayerStats.gd
+│   │   └── Inventory.gd
+│   ├── world/
+│   │   ├── DungeonGenerator.gd
+│   │   ├── Room.gd
+│   │   └── DungeonManager.gd
+│   ├── items/
+│   │   ├── Item.gd
+│   │   ├── ItemDatabase.gd
+│   │   └── LootSystem.gd
+│   ├── enemies/
+│   │   ├── Enemy.gd
+│   │   ├── EnemyAI.gd
+│   │   └── CombatSystem.gd
+│   └── ui/
+│       ├── MainMenu.gd
+│       ├── InventoryUI.gd
+│       └── HUD.gd
+│
+├── assets/                    # All art and audio assets
+│   ├── sprites/
+│   │   ├── characters/       # Player/enemy sprites
+│   │   ├── items/           # Item sprites
+│   │   ├── ui/              # UI elements
+│   │   └── environment/     # Wall/floor textures
+│   ├── audio/
+│   │   ├── sfx/            # Sound effects
+│   │   ├── music/          # Background music
+│   │   └── voice/          # Voice clips
+│   └── 3d/                 # 3D models (if any)
+│       ├── meshes/
+│       └── materials/
+│
+├── data/                      # Game data files
+│   ├── items/               # Item definitions (JSON/resources)
+│   ├── enemies/            # Enemy stats and data
+│   ├── dungeon_templates/  # Procedural generation data
+│   └── config/             # Game configuration
+│
+├── docs/                     # Documentation
+│   ├── design/             # Design documents
+│   ├── technical/          # Technical documentation
+│   └── art/               # Art guidelines and references
+│
+└── tools/                   # Development tools/scripts
+    ├── asset_importer/     # Custom import scripts
+    └── build_scripts/      # Build automation
+```
+
+### Git Configuration Files
+
+**.gitignore** (Godot-specific):
+```
+# Godot-specific ignores
+.import/
+export.cfg
+export_presets.cfg
+.mono/
+data_*/
+
+# OS/Editor specific
+.DS_Store
+Thumbs.db
+*.tmp
+*.bak
+*.swp
+*~
+
+# Build outputs
+builds/
+*.exe
+*.pck
+*.zip
+```
+
+## Development Standards & Quality Assurance
+
+### Code Standards
+**GDScript Conventions:**
+- Use snake_case for variables and functions
+- Use PascalCase for classes and scenes
+- Clear, descriptive variable names (no abbreviations)
+- Comment complex algorithms and networking code
+- Maximum function length: ~20 lines
+- Use type hints: `var health: int = 100`
+
+**Scene Organization:**
+- One primary script per scene
+- Use groups and signals for scene communication
+- Consistent node naming conventions
+- Document scene purpose in comments
+
+### Testing Strategy
+**Manual Testing Checklist:**
+- Single player functionality
+- 2-player networking
+- 4-player stress testing
+- Item physics interactions
+- Dungeon generation consistency
+- Performance testing (60fps target)
+
+**Automated Testing:**
+- Unit tests for core systems (DungeonGenerator, ItemDatabase)
+- Integration tests for networking
+- Performance benchmarks for proc-gen algorithms
+
+### Communication & Project Management
+
+**Daily Standups (15 min):**
+- What did you complete yesterday?
+- What are you working on today?
+- Any blockers or dependencies?
+
+**Sprint Planning:**
+- 1-2 week sprints aligned with development phases
+- Clear acceptance criteria for each task
+- Dependency mapping between features
+
+**Documentation Requirements:**
+- Code comments for all public functions
+- Design decision documentation (why choices were made)
+- API documentation for networking protocols
+- Asset pipeline documentation
+
+### Risk Management & Contingencies
+
+**Technical Risks:**
+- **Networking complexity** → Start simple, prototype early
+- **Physics performance** → Profile regularly, optimize bottlenecks  
+- **Procedural generation quality** → Build evaluation tools
+- **Sprite integration issues** → Test asset pipeline early
+
+**Scope Management:**
+- **MVP Definition**: 2-player, single dungeon level, basic combat
+- **Feature creep prevention**: All new features require design approval
+- **Timeline buffers**: Add 25% time buffer to each sprint
+- **Fallback plans**: Simpler alternatives for complex features
+
+### Build & Deployment Pipeline
+
+**Development Builds:**
+- Nightly automated builds from `develop` branch
+- Quick smoke tests on each build
+- Shared build server for team testing
+
+**Release Process:**
+- Feature freeze → Testing phase → Release candidate → Release
+- Version numbering: Major.Minor.Patch (e.g., 0.1.0)
+- Release notes with changelog
+
+### Performance & Technical Targets
+
+**Performance Goals:**
+- 60 FPS with 4 players
+- <100ms network latency tolerance
+- <2GB RAM usage
+- Load times <5 seconds between dungeon levels
+
+**Technical Debt Management:**
+- Weekly code review sessions
+- Refactoring sprints every 4-6 weeks
+- Performance profiling at each milestone
+- Technical debt backlog prioritization
+
+### Asset Pipeline & Standards
+
+**Sprite Specifications:**
+- Consistent pixel dimensions (32x32, 64x64)
+- Unified color palette across all assets
+- Standardized import settings in Godot
+- Asset naming conventions
+
+**Version Control for Assets:**
+- Large binary files tracked with Git LFS
+- Asset source files (.psd, .aseprite) in separate repo
+- Exported game-ready assets in main repo
+- Change log for asset updates
+
+## Development Implementation Order
+
+### Phase 1: Foundation (Week 1-2)
+**Sprint 1: Core Systems Architecture**
+1. **Single-Player Foundation**
+   - Basic Godot 4 project structure
+   - First-person camera and movement controller
+   - Doom-style movement (WASD + mouse look)
+   - Basic collision with simple geometry
+
+2. **Physics & Item System**
+   - Physics-based item interaction (pick up, drop, throw)
+   - Basic inventory weight system
+   - Simple test items (colored cubes initially)
+
+### Phase 2: Core Gameplay (Week 2-4)
+**Sprint 2: World & Content**
+3. **Basic Dungeon Environment**
+   - Simple room generation (start with hand-placed test rooms)
+   - BoxMesh walls with placeholder textures
+   - Lighting system setup
+   - Isometric sprite integration for enemies
+
+4. **Combat & Progression**
+   - Simple melee/ranged combat
+   - Basic enemy AI (start with simple movement)
+   - Health/damage system
+   - D&D 5E stat foundation
+
+### Phase 3: Content Systems (Week 4-6)
+**Sprint 3: Procedural & Polish**
+5. **Procedural Dungeon Generation**
+   - Room-and-corridor algorithm
+   - Multi-room layouts with connections
+   - Spawn points for items and enemies
+
+6. **Loot & Progression Systems**
+   - Item generation and rarity
+   - Weight/durability mechanics
+   - Character progression integration
+
+### Phase 4: Multiplayer Expansion (Week 6+)
+**Sprint 4: Networking (Optional Phase)**
+7. **Multiplayer Foundation**
+   - Basic 2-player networking
+   - Player spawn/despawn handling
+   - Network synchronization for movement and items
+
+8. **4-Player Scaling**
+   - Expand to 4-player support
+   - Group progression system (stairs/exits)
+   - Advanced multiplayer features
+
+## Technical Dependencies
+- **Movement system** - foundation for all testing
+- **Physics system** - required before item interactions  
+- **Basic dungeon generation** - needed before complex AI/combat
+- **Single-player core** - must work before adding networking
+- **Asset pipeline** - can be added incrementally to existing systems
+
+## Scope Considerations
+- Start with single-player to prove core concept, add multiplayer later
+- Single dungeon level initially, expand to multi-floor
+- Focus on core gameplay loop before advanced features
+- Prototype-driven development approach
+- 2-player networking before scaling to 4-player

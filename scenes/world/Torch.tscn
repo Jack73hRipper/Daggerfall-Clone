@@ -1,0 +1,63 @@
+[gd_scene load_steps=8 format=3 uid="uid://bvq8x1y2n3k4m"]
+
+[ext_resource type="Script" path="res://scripts/world/TorchFlicker.gd" id="1_torch_flicker"]
+[ext_resource type="PackedScene" uid="uid://bgrv3b882ec42" path="res://assets/3d/decorative/Torch.fbx" id="2_torch_model"]
+
+[sub_resource type="QuadMesh" id="QuadMesh_1"]
+size = Vector2(0.1, 0.1)
+
+[sub_resource type="QuadMesh" id="QuadMesh_2"]
+size = Vector2(0.05, 0.05)
+
+[sub_resource type="ParticleProcessMaterial" id="ParticleProcessMaterial_1"]
+direction = Vector3(0, 1, 0)
+spread = 25.0
+initial_velocity_min = 2.0
+initial_velocity_max = 4.0
+gravity = Vector3(0, -0.8, 0)
+scale_min = 0.08
+scale_max = 0.2
+color = Color(1, 0.4, 0.1, 1)
+
+[sub_resource type="ParticleProcessMaterial" id="ParticleProcessMaterial_2"]
+direction = Vector3(0, 1, 0)
+spread = 15.0
+initial_velocity_min = 0.5
+initial_velocity_max = 1.5
+gravity = Vector3(0, 0.3, 0)
+scale_min = 0.15
+scale_max = 0.4
+color = Color(0.3, 0.3, 0.3, 0.4)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_2"]
+transparency = 1
+albedo_color = Color(0.5, 0.5, 0.5, 0.3)
+billboard_mode = 1
+no_depth_test = true
+
+[node name="Torch" type="Node3D"]
+script = ExtResource("1_torch_flicker")
+
+[node name="TorchModel" parent="." instance=ExtResource("2_torch_model")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0)
+
+[node name="FlameLight" type="OmniLight3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.9, 0)
+light_color = Color(1, 0.6, 0.2, 1)
+light_energy = 1.2
+omni_range = 6.0
+
+[node name="FlameParticles" type="GPUParticles3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.85, 0)
+amount = 25
+lifetime = 1.2
+process_material = SubResource("ParticleProcessMaterial_1")
+draw_pass_1 = SubResource("QuadMesh_2")
+
+[node name="SmokeParticles" type="GPUParticles3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.0, 0)
+amount = 15
+lifetime = 2.5
+process_material = SubResource("ParticleProcessMaterial_2")
+draw_pass_1 = SubResource("QuadMesh_1")
+material_override = SubResource("StandardMaterial3D_2")

@@ -1,0 +1,38 @@
+[gd_scene load_steps=5 format=3 uid="uid://trnd10irfvqq"]
+
+[ext_resource type="Script" path="res://scripts/enemies/BaseEnemy.gd" id="1_base_enemy"]
+[ext_resource type="PackedScene" path="res://assets/3d/monsters/Slime.fbx" id="2_slime_model"]
+
+[sub_resource type="SphereShape3D" id="SphereShape3D_1"]
+radius = 0.8
+
+[sub_resource type="SphereShape3D" id="SphereShape3D_2"]
+radius = 8.0
+
+[node name="Slime" type="CharacterBody3D" groups=["enemies"]]
+script = ExtResource("1_base_enemy")
+enemy_name = "Slime"
+max_health = 25
+damage = 4
+move_speed = 1.0
+detection_range = 6.0
+attack_range = 1.5
+experience_reward = 8
+attack_cooldown = 2.0
+
+[node name="EnemyModel" parent="." instance=ExtResource("2_slime_model")]
+transform = Transform3D(0.8, 0, 0, 0, 0.8, 0, 0, 0, 0.8, 0, 0, 0)
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.8, 0)
+shape = SubResource("SphereShape3D_1")
+
+[node name="DetectionArea" type="Area3D" parent="."]
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="DetectionArea"]
+shape = SubResource("SphereShape3D_2")
+
+[node name="AttackArea" type="Area3D" parent="."]
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="AttackArea"]
+shape = SubResource("SphereShape3D_2")

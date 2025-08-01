@@ -1,0 +1,37 @@
+[gd_scene load_steps=5 format=3 uid="uid://r4t3krapc1xv"]
+
+[ext_resource type="Script" path="res://scripts/enemies/BatEnemy.gd" id="1_bat_enemy"]
+[ext_resource type="PackedScene" path="res://assets/3d/monsters/Bat.fbx" id="2_bat_model"]
+
+[sub_resource type="SphereShape3D" id="SphereShape3D_1"]
+radius = 0.6
+
+[sub_resource type="SphereShape3D" id="SphereShape3D_2"]
+radius = 10.0
+
+[node name="Bat" type="CharacterBody3D" groups=["enemies"]]
+script = ExtResource("1_bat_enemy")
+enemy_name = "Bat"
+max_health = 10
+damage = 6
+move_speed = 4.0
+detection_range = 10.0
+attack_range = 1.8
+experience_reward = 12
+attack_cooldown = 0.8
+
+[node name="EnemyModel" parent="." instance=ExtResource("2_bat_model")]
+transform = Transform3D(0.6, 0, 0, 0, 0.6, 0, 0, 0, 0.6, 0, 0, 0)
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+shape = SubResource("SphereShape3D_1")
+
+[node name="DetectionArea" type="Area3D" parent="."]
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="DetectionArea"]
+shape = SubResource("SphereShape3D_2")
+
+[node name="AttackArea" type="Area3D" parent="."]
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="AttackArea"]
+shape = SubResource("SphereShape3D_2")

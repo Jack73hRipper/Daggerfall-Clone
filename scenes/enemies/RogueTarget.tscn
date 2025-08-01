@@ -1,0 +1,18 @@
+[gd_scene load_steps=4 format=3 uid="uid://b7m2k8x5r3ra0"]
+
+[ext_resource type="Script" path="res://scripts/enemies/AnimatedTarget.gd" id="1_enemy_script"]
+[ext_resource type="PackedScene" uid="uid://cqotq88kspeoh" path="res://assets/3d/RPG Characters - Nov 2020/glTF/Rogue.gltf" id="2_rogue_model"]
+
+[sub_resource type="CapsuleShape3D" id="CapsuleShape3D_1"]
+radius = 0.5
+height = 2.0
+
+[node name="RogueTarget" type="StaticBody3D"]
+script = ExtResource("1_enemy_script")
+
+[node name="RogueModel" parent="." instance=ExtResource("2_rogue_model")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0)
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.4, 0)
+shape = SubResource("CapsuleShape3D_1")

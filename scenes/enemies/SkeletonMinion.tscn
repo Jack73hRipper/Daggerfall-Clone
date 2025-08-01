@@ -1,0 +1,39 @@
+[gd_scene load_steps=5 format=3 uid="uid://lfgni8qs7qkd"]
+
+[ext_resource type="Script" path="res://scripts/enemies/BaseEnemy.gd" id="1_base_enemy"]
+[ext_resource type="PackedScene" path="res://assets/3d/monsters/Skeleton_Minion.glb" id="2_skeleton_model"]
+
+[sub_resource type="CapsuleShape3D" id="CapsuleShape3D_1"]
+radius = 0.5
+height = 1.8
+
+[sub_resource type="SphereShape3D" id="SphereShape3D_1"]
+radius = 8.0
+
+[node name="SkeletonMinion" type="CharacterBody3D" groups=["enemies"]]
+script = ExtResource("1_base_enemy")
+enemy_name = "Skeleton Minion"
+max_health = 15
+damage = 3
+move_speed = 1.5
+detection_range = 8.0
+attack_range = 2.0
+experience_reward = 5
+attack_cooldown = 1.5
+
+[node name="EnemyModel" parent="." instance=ExtResource("2_skeleton_model")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0)
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.9, 0)
+shape = SubResource("CapsuleShape3D_1")
+
+[node name="DetectionArea" type="Area3D" parent="."]
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="DetectionArea"]
+shape = SubResource("SphereShape3D_1")
+
+[node name="AttackArea" type="Area3D" parent="."]
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="AttackArea"]
+shape = SubResource("SphereShape3D_1")

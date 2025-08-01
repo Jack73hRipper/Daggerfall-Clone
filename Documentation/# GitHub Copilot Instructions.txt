@@ -1,0 +1,157 @@
+# GitHub Copilot Instructions - Daggerfall Clone Project
+
+## Project Context
+You are working on a multiplayer 3D dungeon crawler inspired by Daggerfall, Doom, Caves of Qud, and Barony. This is a cooperative dungeon exploration game built in Godot 4 with low-poly pixelated graphics.
+
+## Core Game Features
+- **Development Approach**: Single-player first, multiplayer expansion later
+- **Movement**: Doom-style responsive first-person controls, slightly slower paced
+- **Dungeons**: Procedurally generated with open chambers and maze-like corridors
+- **Loot**: Physics-based item interactions, weight/durability systems, deliberate drops
+- **Combat**: Tactical encounters with D&D 5E-inspired stat system
+- **Art Style**: Isometric sprites adapted for 3D (characters/enemies), textured geometric shapes for environment
+
+## Technical Stack & Standards
+
+### Godot 4 Specific Guidelines
+- Use Godot 4 syntax and best practices (not Godot 3)
+- Prefer built-in multiplayer nodes (MultiplayerSpawner, MultiplayerSynchronizer)
+- Use CharacterBody3D for player controllers
+- Implement RigidBody3D for physics-based items
+- Use Sprite3D nodes for isometric character/enemy sprites (fixed rotation or angle-switching)
+
+### Code Style Requirements
+```gdscript
+# Use snake_case for variables and functions
+var player_health: int = 100
+
+# Use PascalCase for classes and scenes
+class_name PlayerController extends CharacterBody3D
+
+# Always use type hints
+func take_damage(amount: int) -> void:
+    player_health -= amount
+
+# Keep functions concise (<20 lines when possible)
+# Comment complex networking and algorithm code
+```
+
+### Architecture Patterns
+- **Development Strategy**: Single-player foundation, networking added later
+- **Scene Organization**: One primary script per scene, use signals for communication
+- **Singletons**: Use autoload for GameManager, Constants (NetworkManager for future multiplayer)
+- **Data**: Separate data definitions from logic (items, enemies, dungeons)
+
+## Key Systems to Understand
+
+### Multiplayer Networking
+- Host acts as server, others connect as clients
+- Synchronize essential game state (positions, health, items)
+- Use RPC for actions, MultiplayerSynchronizer for continuous data
+- Handle player disconnections gracefully
+
+### Physics-Based Items
+- Items are RigidBody3D with Sprite3D visuals
+- Individual weight system affects player movement speed
+- Items can be picked up, dropped, thrown between players
+- Collision shapes should be simple (box/capsule) regardless of sprite
+
+### Procedural Dungeon Generation
+- Room-and-corridor algorithm with variety
+- Generate server-side, sync to all clients
+- Support for multi-floor progression (group-based)
+- Include dead ends, secrets, and trap placement
+
+### Character Systems
+- D&D 5E inspired stats (STR, DEX, CON, INT, WIS, CHA)
+- STR affects carrying capacity and movement speed when encumbered
+- Group-based progression and shared loot philosophy
+
+## Specific Implementation Notes
+
+### For Player Controllers:
+```gdscript
+# Use CharacterBody3D with first-person camera
+# Implement smooth mouse look with sensitivity settings
+# Handle movement with move_and_slide()
+# Network sync position/rotation via MultiplayerSynchronizer
+```
+
+### For Item Systems:
+```gdscript
+# Items should extend RigidBody3D
+# Use Sprite3D child for visuals
+# Implement pickup/drop through area detection
+# Weight affects player movement_speed calculation
+```
+
+### For Dungeon Generation:
+```gdscript
+# Generate on server, send structure to clients
+# Use simple geometric shapes (BoxMesh) for walls/floors
+# Apply 2D sprite textures to 3D geometry
+# Support room templates and corridor connections
+```
+
+### For Enemy AI:
+```gdscript
+# Use CharacterBody3D for enemies
+# Isometric Sprite3D at fixed angle or with angle-switching logic
+# Simple state machine (idle, chase, attack, death)
+# Network sync essential state only
+```
+
+## Asset Integration Guidelines
+- Sprites should be imported with Filter OFF for pixelated look
+- Use isometric sprites at fixed 3D rotation or implement angle-switching based on camera position
+- Extract and apply sprite textures to simple 3D geometry for environment
+- Maintain consistent pixel dimensions from existing sprite sheets
+- Leverage existing dark fantasy isometric sprite collection
+
+## Performance Considerations
+- Target 60 FPS with 4 players
+- Minimize network traffic (sync only essential data)
+- Use object pooling for frequently spawned items
+- LOD systems for distant objects if needed
+- Profile physics interactions regularly
+
+## Common Patterns to Suggest
+
+### Networking Pattern:
+```gdscript
+@rpc("any_peer", "call_local")
+func perform_action(action_data: Dictionary):
+    if multiplayer.is_server():
+        # Validate and execute action
+        pass
+```
+
+### Item Interaction Pattern:
+```gdscript
+func _on_item_area_entered(body):
+    if body.is_in_group("players"):
+        body.attempt_pickup(self)
+```
+
+### State Management Pattern:
+```gdscript
+# Use signals for loose coupling
+signal health_changed(new_health)
+signal item_picked_up(item)
+```
+
+## Error Prevention
+- Always check `multiplayer.is_server()` before authoritative actions
+- Validate RPC parameters to prevent cheating
+- Handle null references gracefully in networked code
+- Use `@tool` sparingly and only when necessary
+- Prefer composition over deep inheritance
+
+## When Suggesting Code:
+1. Prioritize single-player functionality first
+2. Design with future multiplayer in mind but don't implement networking yet
+3. Follow the established folder structure
+4. Use appropriate Godot 4 nodes and methods
+5. Include error handling for edge cases
+6. Suggest simple, maintainable solutions over complex ones
+7. Consider performance impact and optimization opportunities

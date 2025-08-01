@@ -1,0 +1,37 @@
+[gd_scene load_steps=7 format=3 uid="uid://bo4urxvx65iyk"]
+
+[ext_resource type="PackedScene" uid="uid://bkqvl6jy3n2sx" path="res://scenes/player/Player.tscn" id="1_7x8kd"]
+[ext_resource type="Script" uid="uid://wrboy2nfr4wi" path="res://scripts/world/DaggerfallDungeonGenerator.gd" id="2_daggerfall_dungeon"]
+[ext_resource type="Script" uid="uid://bbyt3l4lxku53" path="res://scripts/main/TestSceneController.gd" id="3_test_controller"]
+[ext_resource type="PackedScene" uid="uid://b8k4m5qr1qrco" path="res://scenes/ui/PlayerHUD.tscn" id="4_player_hud"]
+[ext_resource type="PackedScene" uid="uid://c2n8m5qsapqco" path="res://scenes/ui/CharacterMenu.tscn" id="5_character_menu"]
+
+[sub_resource type="Environment" id="Environment_1"]
+background_mode = 1
+background_color = Color(0.1, 0.1, 0.15, 1)
+ambient_light_source = 2
+ambient_light_color = Color(0.3, 0.3, 0.4, 1)
+ambient_light_energy = 0.3
+
+[node name="TestScene" type="Node3D"]
+script = ExtResource("3_test_controller")
+
+[node name="Player" parent="." instance=ExtResource("1_7x8kd")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0)
+
+[node name="DaggerfallDungeonGenerator" type="Node3D" parent="."]
+script = ExtResource("2_daggerfall_dungeon")
+
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="."]
+transform = Transform3D(0.707107, -0.5, 0.5, 0, 0.707107, 0.707107, -0.707107, -0.5, 0.5, 0, 10, 0)
+light_energy = 0.8
+shadow_enabled = true
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="."]
+environment = SubResource("Environment_1")
+
+[node name="UILayer" type="CanvasLayer" parent="."]
+
+[node name="PlayerHUD" parent="UILayer" instance=ExtResource("4_player_hud")]
+
+[node name="CharacterMenu" parent="UILayer" instance=ExtResource("5_character_menu")]

@@ -1,0 +1,59 @@
+[gd_scene load_steps=4 format=3 uid="uid://d3bpyvy6griav"]
+
+[ext_resource type="PackedScene" uid="uid://bkqvl6jy3n2sx" path="res://scenes/player/Player.tscn" id="1_player"]
+[ext_resource type="Script" uid="uid://cynnoxgv72eyb" path="res://scripts/world/DungeonManager.gd" id="2_dungeon_manager"]
+[ext_resource type="Script" uid="uid://jg0ahfu26fqc" path="res://scripts/main/ProceduralDungeonTestController.gd" id="4_controller"]
+
+[node name="ProceduralDungeonTest" type="Node3D"]
+script = ExtResource("4_controller")
+
+[node name="DungeonManager" type="Node3D" parent="."]
+script = ExtResource("2_dungeon_manager")
+
+[node name="DungeonGenerator" type="Node3D" parent="DungeonManager"]
+
+[node name="Player" parent="." instance=ExtResource("1_player")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.5, 0)
+
+[node name="Environment" type="Node3D" parent="."]
+
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="Environment"]
+transform = Transform3D(0.707107, -0.5, 0.5, 0, 0.707107, 0.707107, -0.707107, -0.5, 0.5, 0, 10, 0)
+light_energy = 0.8
+shadow_enabled = true
+
+[node name="UI" type="Control" parent="."]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="DebugPanel" type="VBoxContainer" parent="UI"]
+layout_mode = 1
+anchors_preset = 2
+anchor_top = 1.0
+anchor_bottom = 1.0
+offset_left = 10.0
+offset_top = -120.0
+offset_right = 300.0
+offset_bottom = -10.0
+grow_vertical = 0
+
+[node name="Instructions" type="Label" parent="UI/DebugPanel"]
+layout_mode = 2
+text = "F1 - Regenerate Dungeon
+F2 - Next Floor
+F3 - Debug Info"
+horizontal_alignment = 1
+
+[node name="FloorLabel" type="Label" parent="UI/DebugPanel"]
+layout_mode = 2
+text = "Floor: 1"
+horizontal_alignment = 1
+
+[node name="StatusLabel" type="Label" parent="UI/DebugPanel"]
+layout_mode = 2
+text = "Generating dungeon..."
+horizontal_alignment = 1

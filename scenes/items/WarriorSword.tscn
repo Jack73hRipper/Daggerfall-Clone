@@ -1,0 +1,30 @@
+[gd_scene load_steps=3 format=3 uid="uid://b8k4j3gag8h2w"]
+
+[ext_resource type="Script" path="res://scripts/items/Weapon.gd" id="1_sword"]
+[ext_resource type="PackedScene" path="res://assets/3d/weapons/Sword.fbx" id="2_sword_model"]
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_1"]
+size = Vector3(0.2, 1.2, 0.1)
+
+[node name="WarriorSword" type="RigidBody3D" groups=["items", "weapons"]]
+script = ExtResource("1_sword")
+item_name = "Warrior Sword"
+item_weight = 3.0
+item_value = 50
+item_description = "A well-crafted warrior's blade"
+weapon_type = "sword"
+damage = 15
+
+[node name="WeaponModel" type="Node3D" parent="."]
+
+[node name="UltimateRPGSwordModel" parent="WeaponModel" instance=ExtResource("2_sword_model")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0)
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+shape = SubResource("BoxShape3D_1")
+
+[node name="PickupArea" type="Area3D" parent="."]
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="PickupArea"]
+transform = Transform3D(1.5, 0, 0, 0, 1.5, 0, 0, 0, 1.5, 0, 0, 0)
+shape = SubResource("BoxShape3D_1")
