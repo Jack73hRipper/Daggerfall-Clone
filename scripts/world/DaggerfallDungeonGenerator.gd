@@ -111,9 +111,13 @@ var grid: Array[Array] = []
 var spawn_points: Array[Vector3] = []
 
 # Grid values
-const WALL = 0
+const WALL_INTERIOR = 0  # Interior dungeon walls (allow torches)
 const FLOOR = 1
 const DOOR = 2
+const WALL_TOMB = 3      # Exterior tomb walls (no torches)
+
+# Legacy constant for backward compatibility during transition
+const WALL = WALL_INTERIOR
 
 func _ready():
 	print("Starting Daggerfall-style dungeon generation...")
@@ -166,12 +170,17 @@ func clear_dungeon_data():
 	grid.clear()
 
 func initialize_grid():
-	"""Initialize the grid with walls"""
+	"""Initialize the grid with tomb walls on perimeter and empty interior"""
 	grid = []
 	for x in range(dungeon_size.x):
 		grid.append([])
 		for y in range(dungeon_size.y):
-			grid[x].append(WALL)
+			# Create tomb boundary walls on the perimeter
+			if x == 0 or x == dungeon_size.x - 1 or y == 0 or y == dungeon_size.y - 1:
+				grid[x].append(WALL_TOMB)
+			else:
+				# Interior starts empty - walls will be added only where needed
+				grid[x].append(WALL_TOMB)  # Start with tomb walls, will be overwritten
 
 func generate_main_rooms():
 	"""Phase 1 Step 1: Place 3-5 large chambers randomly with minimum distance"""
@@ -254,31 +263,47 @@ func get_room_size(room_type: RoomType) -> Vector2i:
 	return Vector2i(8, 8)
 
 func connect_rooms_with_corridors():
-	"""Phase 2: Create corridor system connecting all rooms"""
-	# Use simple nearest-neighbor connection for now
-	for i in range(rooms.size()):
-		if rooms[i].connected:
-			continue
-			
-		# Find nearest unconnected room
-		var nearest_room = null
-		var nearest_distance = 999999.0
-		
-		for j in range(rooms.size()):
-			if i == j:
-				continue
-			var distance = rooms[i].get_center().distance_to(rooms[j].get_center())
-			if distance < nearest_distance:
-				nearest_distance = distance
-				nearest_room = rooms[j]
-		
-		if nearest_room:
-			var corridor = Corridor.new(rooms[i], nearest_room, CorridorType.L_SHAPED)
-			corridors.append(corridor)
-			rooms[i].connected = true
-			nearest_room.connected = true
+	"""Phase 2: Create corridor system connecting all rooms with guaranteed connectivity"""
+	if rooms.size() <= 1:
+		return
 	
-	print("Generated ", corridors.size(), " corridors")
+	# Start with the first room as the connected network
+	var connected_rooms: Array[Room] = [rooms[0]]
+	var unconnected_rooms: Array[Room] = []
+	
+	# Add all other rooms to unconnected list
+	for i in range(1, rooms.size()):
+		unconnected_rooms.append(rooms[i])
+	
+	# Connect each unconnected room to the nearest connected room
+	while unconnected_rooms.size() > 0:
+		var best_distance = 999999.0
+		var best_unconnected = null
+		var best_connected = null
+		
+		# Find the shortest connection between any unconnected room and any connected room
+		for unconnected in unconnected_rooms:
+			for connected in connected_rooms:
+				var distance = unconnected.get_center().distance_to(connected.get_center())
+				if distance < best_distance:
+					best_distance = distance
+					best_unconnected = unconnected
+					best_connected = connected
+		
+		# Create the corridor
+		if best_unconnected and best_connected:
+			var corridor = Corridor.new(best_unconnected, best_connected, CorridorType.L_SHAPED)
+			corridors.append(corridor)
+			
+			# Move the room from unconnected to connected
+			connected_rooms.append(best_unconnected)
+			unconnected_rooms.erase(best_unconnected)
+			
+			# Mark both rooms as connected
+			best_unconnected.connected = true
+			best_connected.connected = true
+	
+	print("Generated ", corridors.size(), " corridors - all rooms connected")
 
 func mark_floor_areas():
 	"""Mark all room and corridor areas as floor in the grid"""
@@ -341,10 +366,25 @@ func generate_room_walls(room: Room):
 		place_wall(Vector2i(pos.x + size.x, y), WallDirection.EAST)
 
 func place_wall(pos: Vector2i, _direction: WallDirection):
-	"""Place a wall at position with specific direction, unless it's floor area"""
+	"""Place an interior wall at position with specific direction, unless it's floor area"""
 	if pos.x >= 0 and pos.x < dungeon_size.x and pos.y >= 0 and pos.y < dungeon_size.y:
 		if grid[pos.x][pos.y] != FLOOR:  # Don't place walls over floor areas
-			grid[pos.x][pos.y] = WALL
+			grid[pos.x][pos.y] = WALL_INTERIOR  # Use interior walls for room boundaries
+
+func is_adjacent_to_floor(pos: Vector2i) -> bool:
+	"""Check if position is adjacent to any floor tile (simplified since we're now precise about wall creation)"""
+	var adjacent_positions = [
+		Vector2i(pos.x, pos.y - 1),  # North
+		Vector2i(pos.x + 1, pos.y),  # East
+		Vector2i(pos.x, pos.y + 1),  # South
+		Vector2i(pos.x - 1, pos.y)   # West
+	]
+	
+	for adj_pos in adjacent_positions:
+		if adj_pos.x >= 0 and adj_pos.x < dungeon_size.x and adj_pos.y >= 0 and adj_pos.y < dungeon_size.y:
+			if grid[adj_pos.x][adj_pos.y] == FLOOR:
+				return true
+	return false
 
 func create_doorways():
 	"""Create doorways where corridors meet rooms"""
@@ -397,13 +437,14 @@ func build_3d_geometry():
 						if rooms[0].position.y <= y and y < rooms[0].position.y + rooms[0].size.y:
 							spawn_points.append(world_pos + Vector3(0, 1.0, 0))
 	
-	# Build walls with room-specific heights
+	# Build walls with room-specific heights (both interior and tomb walls)
 	for x in range(dungeon_size.x):
 		for y in range(dungeon_size.y):
-			if grid[x][y] == WALL:
+			if grid[x][y] == WALL_INTERIOR or grid[x][y] == WALL_TOMB:
 				var pos = Vector2i(x, y)
 				var wall_height = get_wall_height_at_position(pos)
-				var wall_instance = create_wall_node(wall_height)
+				var is_tomb_wall = (grid[x][y] == WALL_TOMB)
+				var wall_instance = create_wall_node(wall_height, is_tomb_wall)
 				wall_instance.position = Vector3(x * TILE_SIZE, 0, y * TILE_SIZE)
 				add_child(wall_instance)
 				wall_count += 1
@@ -474,10 +515,10 @@ func create_floor_node() -> StaticBody3D:
 	
 	return floor_node
 
-func create_wall_node(wall_height: float = 4.0) -> StaticBody3D:
-	"""Create a wall tile with specified height"""
+func create_wall_node(wall_height: float = 4.0, is_tomb_wall: bool = false) -> StaticBody3D:
+	"""Create a wall tile with specified height and material type"""
 	var wall_node = StaticBody3D.new()
-	wall_node.name = "Wall"
+	wall_node.name = "TombWall" if is_tomb_wall else "InteriorWall"
 	wall_node.collision_layer = 1
 	wall_node.collision_mask = 0
 	
@@ -488,15 +529,28 @@ func create_wall_node(wall_height: float = 4.0) -> StaticBody3D:
 	mesh_instance.position.y = wall_height / 2.0  # Center the wall vertically
 	
 	var material = StandardMaterial3D.new()
-	# Load stone wall texture
-	var wall_texture = load("res://assets/textures/materials/stone_wall.png")
-	if wall_texture:
-		material.albedo_texture = wall_texture
-		# Configure texture tiling for seamless walls
-		material.uv1_scale = Vector3(1.0, 1.0, 1.0)  # Adjust tiling as needed
-		material.texture_filter = BaseMaterial3D.TEXTURE_FILTER_LINEAR
+	
+	if is_tomb_wall:
+		# Tomb walls: darker, more weathered appearance
+		var tomb_texture = load("res://assets/textures/materials/stone_wall.png")  # Could use different texture later
+		if tomb_texture:
+			material.albedo_texture = tomb_texture
+			material.uv1_scale = Vector3(1.0, 1.0, 1.0)
+			material.texture_filter = BaseMaterial3D.TEXTURE_FILTER_LINEAR
+			# Make tomb walls darker and more imposing
+			material.albedo_color = Color(0.4, 0.3, 0.3)  # Darker tint
+		else:
+			material.albedo_color = Color(0.3, 0.2, 0.2)  # Dark tomb stone
 	else:
-		material.albedo_color = Color(0.6, 0.5, 0.4)  # Fallback stone wall color
+		# Interior walls: normal dungeon appearance
+		var wall_texture = load("res://assets/textures/materials/stone_wall.png")
+		if wall_texture:
+			material.albedo_texture = wall_texture
+			material.uv1_scale = Vector3(1.0, 1.0, 1.0)  # Adjust tiling as needed
+			material.texture_filter = BaseMaterial3D.TEXTURE_FILTER_LINEAR
+		else:
+			material.albedo_color = Color(0.6, 0.5, 0.4)  # Fallback stone wall color
+	
 	mesh_instance.material_override = material
 	
 	wall_node.add_child(mesh_instance)
@@ -603,18 +657,30 @@ func place_wall_mounted_torches():
 	
 	total_torch_count = 0
 	
-	# Go through all walls and potentially add torches
+	# Go through all interior walls and potentially add torches (skip tomb walls)
 	for x in range(dungeon_size.x):
 		for y in range(dungeon_size.y):
-			if grid[x][y] == WALL:
+			if grid[x][y] == WALL_INTERIOR:
 				# Check if this wall should have a torch (percentage chance)
 				if randf() < torch_spawn_chance:
 					# Make sure there's at least one adjacent floor tile for proper mounting
-					if has_adjacent_floor(Vector2i(x, y)):
+					if has_adjacent_floor(Vector2i(x, y)) and is_proper_room_wall(Vector2i(x, y)):
 						place_wall_sconce_torch(Vector2i(x, y))
 	
 	print("Placed ", total_torch_count, " wall-mounted sconce torches (", 
 		  int(torch_spawn_chance * 100), "% spawn rate)")
+
+func is_proper_room_wall(wall_pos: Vector2i) -> bool:
+	"""Check if this wall is actually on the perimeter of a room (not floating)"""
+	# Check if this wall position is within 1 tile of any room boundary
+	for room in rooms:
+		var room_boundary = Rect2i(room.position - Vector2i(1, 1), room.size + Vector2i(2, 2))
+		if room_boundary.has_point(wall_pos):
+			# Make sure it's not inside the room itself
+			var room_interior = Rect2i(room.position, room.size)
+			if not room_interior.has_point(wall_pos):
+				return true
+	return false
 
 func has_adjacent_floor(wall_pos: Vector2i) -> bool:
 	"""Check if wall has at least one adjacent floor tile for proper torch mounting"""
@@ -711,10 +777,10 @@ func get_wall_surface_offset(facing_direction: WallDirection) -> Vector3:
 	return Vector3.ZERO
 
 func is_wall_at_position(pos: Vector2i) -> bool:
-	"""Check if there's a wall at the given position"""
+	"""Check if there's a wall (interior or tomb) at the given position"""
 	if pos.x < 0 or pos.x >= dungeon_size.x or pos.y < 0 or pos.y >= dungeon_size.y:
 		return true  # Consider out-of-bounds as walls
-	return grid[pos.x][pos.y] == WALL
+	return grid[pos.x][pos.y] == WALL_INTERIOR or grid[pos.x][pos.y] == WALL_TOMB
 
 func is_door_at_position(pos: Vector2i) -> bool:
 	"""Check if there's a door at the given position"""

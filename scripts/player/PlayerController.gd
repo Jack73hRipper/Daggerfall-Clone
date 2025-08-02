@@ -16,6 +16,14 @@ extends CharacterBody3D
 @export var mouse_sensitivity: float = 0.002
 @export var vertical_look_limit: float = 1.5  # Radians (about 85 degrees)
 
+# Camera zoom settings
+@export var min_zoom_distance: float = 0.0     # First person (camera at head)
+@export var max_zoom_distance: float = 8.0     # Third person max distance
+@export var zoom_speed: float = 0.5            # How fast to zoom per scroll
+@export var zoom_smoothing: float = 10.0       # Smooth camera movement
+var current_zoom_distance: float = 0.0         # Current camera distance
+var target_zoom_distance: float = 0.0          # Target distance for smooth transitions
+
 # Camera references
 @onready var head: Node3D = $Head
 @onready var camera: Camera3D = $Head/Camera3D
@@ -83,20 +91,31 @@ func _ready() -> void:
 	collision_mask = 1     # Player collides with layer 1 (world geometry)
 
 func _input(event: InputEvent) -> void:
+	# Handle escape key to show escape menu (works even when paused)
+	if event.is_action_pressed("ui_cancel"):
+		var escape_menu = _find_escape_menu()
+		if escape_menu and not escape_menu.visible:
+			escape_menu.show_menu()
+		return  # Don't process other input when escape menu is shown
+	
+	# Don't process other input when game is paused
+	if get_tree().paused:
+		return
+	
 	# Handle mouse look
 	if event is InputEventMouseMotion and Input.get_mouse_mode() == Input.MOUSE_MODE_CAPTURED:
 		handle_mouse_look(event.relative)
 	
+	# Handle mouse wheel for camera zoom
+	if event is InputEventMouseButton and Input.get_mouse_mode() == Input.MOUSE_MODE_CAPTURED:
+		if event.button_index == MOUSE_BUTTON_WHEEL_UP and event.pressed:
+			zoom_camera(-1.0)
+		elif event.button_index == MOUSE_BUTTON_WHEEL_DOWN and event.pressed:
+			zoom_camera(1.0)
+	
 	# Handle spell casting input
 	if spell_system:
 		spell_system.handle_spell_input(event)
-	
-	# Handle escape key to release mouse (for debugging)
-	if event.is_action_pressed("ui_cancel"):
-		if Input.get_mouse_mode() == Input.MOUSE_MODE_CAPTURED:
-			Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
-		else:
-			Input.set_mouse_mode(Input.MOUSE_MODE_CAPTURED)
 	
 	# Debug input handling
 	if event.is_action_pressed("debug_damage"):
@@ -110,10 +129,15 @@ func _input(event: InputEvent) -> void:
 		print("Character menu key pressed - handled by TestSceneController")
 
 func _physics_process(delta: float) -> void:
+	# Don't process physics when game is paused
+	if get_tree().paused:
+		return
+		
 	handle_input()
 	handle_movement(delta)
 	handle_gravity(delta)
 	update_carried_item_position()
+	update_camera_position(delta)  # Handle smooth camera zoom transitions
 	
 	# Handle stamina regeneration and consumption
 	handle_stamina_system(delta)
@@ -184,6 +208,10 @@ func handle_input() -> void:
 	# Handle item interaction
 	if Input.is_action_just_pressed("interact"):
 		handle_interaction()
+	
+	# Handle torch lighting
+	if Input.is_action_just_pressed("light_torch"):
+		handle_torch_interaction()
 
 func handle_mouse_look(mouse_delta: Vector2) -> void:
 	"""Handle first-person camera movement"""
@@ -196,6 +224,36 @@ func handle_mouse_look(mouse_delta: Vector2) -> void:
 		
 		# Clamp vertical look to prevent over-rotation
 		head.rotation.x = clamp(head.rotation.x, -vertical_look_limit, vertical_look_limit)
+
+func zoom_camera(zoom_delta: float) -> void:
+	"""Handle camera zoom with mouse wheel"""
+	target_zoom_distance += zoom_delta
+	target_zoom_distance = clamp(target_zoom_distance, min_zoom_distance, max_zoom_distance)
+	
+	# User feedback
+	if target_zoom_distance <= 0.1:
+		print("Camera: First Person")
+	else:
+		print("Camera: Third Person (distance: ", round(target_zoom_distance * 10) / 10, ")")
+
+func update_camera_position(delta: float) -> void:
+	"""Smoothly move camera between first and third person positions"""
+	# Smoothly interpolate current zoom to target
+	current_zoom_distance = lerp(current_zoom_distance, target_zoom_distance, zoom_smoothing * delta)
+	
+	# Position camera based on zoom distance
+	if current_zoom_distance <= 0.1:  # Essentially first person
+		camera.position = Vector3.ZERO
+		# Show weapon in first person
+		if weapon_hold:
+			weapon_hold.visible = true
+	else:
+		# Third person - move camera back and slightly up from head
+		var height_offset = current_zoom_distance * 0.3  # Slight upward angle
+		camera.position = Vector3(0, height_offset, current_zoom_distance)
+		# Hide weapon in third person to avoid weird floating weapon effect
+		if weapon_hold:
+			weapon_hold.visible = false
 
 func toggle_noclip() -> void:
 	"""Toggle noclip mode for debugging torch placement"""
@@ -211,6 +269,22 @@ func toggle_noclip() -> void:
 		set_collision_mask_value(1, true)
 		# Reset velocity to prevent floating
 		velocity = Vector3.ZERO
+
+func _find_escape_menu():
+	"""Find the EscapeMenu in the scene tree"""
+	# Try to find UI layer first
+	var ui_layer = get_tree().get_first_node_in_group("ui_layer")
+	if ui_layer:
+		var escape_menu = ui_layer.get_node_or_null("EscapeMenu")
+		if escape_menu:
+			return escape_menu
+	
+	# Fallback: search by name in the current scene
+	var current_scene = get_tree().current_scene
+	if current_scene:
+		return current_scene.find_child("EscapeMenu", true, false)
+	
+	return null
 
 func handle_movement(delta: float) -> void:
 	"""Handle movement with noclip support"""
@@ -348,6 +422,20 @@ func drop_carried_item() -> void:
 	carried_item = null
 	print("Dropped item")
 
+func handle_torch_interaction() -> void:
+	"""Handle torch lighting/extinguishing"""
+	if carried_item and carried_item.has_method("light_torch"):
+		if carried_item.is_lit:
+			if carried_item.extinguish_torch():
+				print("Torch extinguished")
+		else:
+			if carried_item.light_torch():
+				print("Torch lit!")
+			else:
+				print("Cannot light torch - no fuel remaining")
+	else:
+		print("No torch equipped to light")
+
 func update_carried_item_position() -> void:
 	"""Update position of carried item to follow player"""
 	# This function is no longer needed since weapons are attached to camera
@@ -388,16 +476,24 @@ func attach_weapon_to_hold(weapon: Node) -> void:
 
 func position_weapon_in_hand(weapon: Node) -> void:
 	"""Position weapon properly in the player's hand/view with proper pivot setup"""
-	if not weapon.has_method("get_weapon_info"):
-		return
-		
-	var weapon_info = weapon.get_weapon_info()
-	var weapon_type = weapon_info.get("weapon_type", "unknown")
+	var item_type = "unknown"
 	
-	# Create a pivot point at the hilt (where player holds the weapon)
-	# This allows natural swinging from the grip point
+	# Check if it's a weapon
+	if weapon.has_method("get_weapon_info"):
+		var weapon_info = weapon.get_weapon_info()
+		item_type = weapon_info.get("weapon_type", "unknown")
+	# Check if it's a torch
+	elif weapon.has_method("get_torch_info"):
+		item_type = "torch"
+	# Check if it has general item info
+	elif weapon.has_method("get_item_info"):
+		var item_info = weapon.get_item_info()
+		item_type = item_info.get("item_type", "unknown")
+	
+	# Create a pivot point at the grip (where player holds the item)
+	# This allows natural movement from the grip point
 	var pivot_node = Node3D.new()
-	pivot_node.name = "WeaponPivot"
+	pivot_node.name = "ItemPivot"
 	
 	# Remove weapon from current parent and add pivot
 	var current_parent = weapon.get_parent()
@@ -405,8 +501,8 @@ func position_weapon_in_hand(weapon: Node) -> void:
 	current_parent.add_child(pivot_node)
 	pivot_node.add_child(weapon)
 	
-	# Position the pivot at the grip/hilt location
-	match weapon_type:
+	# Position the pivot based on item type
+	match item_type:
 		"sword":
 			# Pivot at hilt position in right hand - BEHIND player for proper idle position
 			pivot_node.position = Vector3(0.3, -0.3, -0.8)  # Much further back, lower
@@ -421,20 +517,27 @@ func position_weapon_in_hand(weapon: Node) -> void:
 			# Weapon extends back from pivot
 			weapon.position = Vector3(0, 0, -0.3)  # NEGATIVE Z = dagger behind player
 			weapon.rotation_degrees = Vector3(-20, 0, 0)  # Angle down and back
+		"torch":
+			# Torch positioning - held up and forward for visibility and lighting
+			pivot_node.position = Vector3(0.4, -0.1, 0.2)  # Right side, slightly forward for light
+			pivot_node.rotation_degrees = Vector3(-10, 30, 15)  # Angled up and outward
+			# Torch extends upward from grip
+			weapon.position = Vector3(0, 0.3, 0)  # Torch head above grip
+			weapon.rotation_degrees = Vector3(0, 0, 0)  # Keep torch upright
 		_:
-			# Default pivot positioning - BEHIND player
+			# Default positioning for unknown items
 			pivot_node.position = Vector3(0.3, -0.3, -0.7)  # Much further back
 			pivot_node.rotation_degrees = Vector3(-18, 20, 8)
-			# Standard offset with weapon extending back
-			weapon.position = Vector3(0, 0, -0.4)  # NEGATIVE Z = weapon behind player
-			weapon.rotation_degrees = Vector3(-22, 0, 0)  # Point weapon down and back
+			# Standard offset with item extending back
+			weapon.position = Vector3(0, 0, -0.4)  # NEGATIVE Z = item behind player
+			weapon.rotation_degrees = Vector3(-22, 0, 0)  # Point item down and back
 	
-	# Set as current weapon for combat (store the actual weapon, not pivot)
-	var actual_weapon = pivot_node.get_child(0) if pivot_node.get_child_count() > 0 else weapon
-	# But we'll animate the pivot for natural swinging
+	# Set as current weapon/item for interaction (store the actual item, not pivot)
+	var actual_item = pivot_node.get_child(0) if pivot_node.get_child_count() > 0 else weapon
+	# But we'll animate the pivot for natural movement
 	current_weapon_pivot = pivot_node
-	current_weapon = actual_weapon
-	print("Equipped ", actual_weapon.name, " for combat with pivot setup")
+	current_weapon = actual_item
+	print("Equipped ", actual_item.name, " (", item_type, ") with pivot setup")
 
 func detach_weapon_from_hold(weapon: Node) -> void:
 	"""Detach weapon from hold point and return to world (handles pivot system)"""

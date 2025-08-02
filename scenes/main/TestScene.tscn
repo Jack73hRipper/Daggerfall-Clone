@@ -1,10 +1,11 @@
-[gd_scene load_steps=7 format=3 uid="uid://bo4urxvx65iyk"]
+[gd_scene load_steps=8 format=3 uid="uid://bo4urxvx65iyk"]
 
 [ext_resource type="PackedScene" uid="uid://bkqvl6jy3n2sx" path="res://scenes/player/Player.tscn" id="1_7x8kd"]
 [ext_resource type="Script" uid="uid://wrboy2nfr4wi" path="res://scripts/world/DaggerfallDungeonGenerator.gd" id="2_daggerfall_dungeon"]
 [ext_resource type="Script" uid="uid://bbyt3l4lxku53" path="res://scripts/main/TestSceneController.gd" id="3_test_controller"]
 [ext_resource type="PackedScene" uid="uid://b8k4m5qr1qrco" path="res://scenes/ui/PlayerHUD.tscn" id="4_player_hud"]
 [ext_resource type="PackedScene" uid="uid://c2n8m5qsapqco" path="res://scenes/ui/CharacterMenu.tscn" id="5_character_menu"]
+[ext_resource type="PackedScene" path="res://scenes/ui/EscapeMenu.tscn" id="6_escape_menu"]
 
 [sub_resource type="Environment" id="Environment_1"]
 background_mode = 1
@@ -30,8 +31,12 @@ shadow_enabled = true
 [node name="WorldEnvironment" type="WorldEnvironment" parent="."]
 environment = SubResource("Environment_1")
 
-[node name="UILayer" type="CanvasLayer" parent="."]
+[node name="UILayer" type="CanvasLayer" parent="." groups=["ui_layer"]]
 
 [node name="PlayerHUD" parent="UILayer" instance=ExtResource("4_player_hud")]
 
 [node name="CharacterMenu" parent="UILayer" instance=ExtResource("5_character_menu")]
+
+[node name="EscapeMenu" parent="UILayer" instance=ExtResource("6_escape_menu")]
+grow_horizontal = 2
+grow_vertical = 2

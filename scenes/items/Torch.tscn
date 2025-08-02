@@ -1,0 +1,73 @@
+[gd_scene load_steps=7 format=3 uid="uid://cp8j4xo6pfxy"]
+
+[ext_resource type="Script" path="res://scripts/items/Torch.gd" id="1_torch"]
+[ext_resource type="PackedScene" path="res://assets/3d/items/tools/torch.fbx" id="2_torch_model"]
+
+[sub_resource type="CapsuleShape3D" id="CapsuleShape3D_1"]
+radius = 0.1
+height = 0.8
+
+[sub_resource type="CapsuleShape3D" id="CapsuleShape3D_2"]
+radius = 1.0
+height = 2.0
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_1"]
+top_radius = 0.05
+bottom_radius = 0.05
+height = 0.8
+cap_top = true
+cap_bottom = true
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_torch"]
+albedo_color = Color(0.6, 0.4, 0.2, 1)
+
+[sub_resource type="ParticleProcessMaterial" id="ParticleProcessMaterial_1"]
+direction = Vector3(0, 1, 0)
+initial_velocity_min = 1.0
+initial_velocity_max = 3.0
+gravity = Vector3(0, -2, 0)
+scale_min = 0.1
+scale_max = 0.3
+color = Color(1, 0.8, 0.4, 1)
+
+[sub_resource type="QuadMesh" id="QuadMesh_1"]
+size = Vector2(0.1, 0.1)
+
+[node name="Torch" type="RigidBody3D" groups=["items"]]
+script = ExtResource("1_torch")
+
+[node name="Sprite3D" type="Sprite3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.4, 0)
+billboard = 1
+texture_filter = 0
+
+[node name="TorchMesh" type="Node3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.4, 0)
+
+[node name="TorchModel" parent="TorchMesh" instance=ExtResource("2_torch_model")]
+transform = Transform3D(0.1, 0, 0, 0, 0.1, 0, 0, 0, 0.1, 0, 0, 0)
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.4, 0)
+shape = SubResource("CapsuleShape3D_1")
+
+[node name="PickupArea" type="Area3D" parent="."]
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="PickupArea"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.4, 0)
+shape = SubResource("CapsuleShape3D_2")
+
+[node name="TorchLight" type="OmniLight3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.8, 0)
+light_energy = 1.0
+omni_range = 10.0
+light_color = Color(1, 0.8, 0.4, 1)
+visible = false
+
+[node name="FlameParticles" type="GPUParticles3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.8, 0)
+emitting = false
+amount = 50
+lifetime = 2.0
+process_material = SubResource("ParticleProcessMaterial_1")
+draw_pass_1 = SubResource("QuadMesh_1")

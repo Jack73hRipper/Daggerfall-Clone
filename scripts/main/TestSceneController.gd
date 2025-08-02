@@ -12,6 +12,7 @@ extends Node3D
 # Weapon scenes
 const SWORD_SCENE = preload("res://scenes/items/WarriorSword.tscn")
 const DAGGER_SCENE = preload("res://scenes/items/RogueDagger.tscn")
+const TORCH_SCENE = preload("res://scenes/items/Torch.tscn")
 
 func _ready() -> void:
 	print("TestScene starting...")
@@ -138,3 +139,19 @@ func spawn_test_weapons() -> void:
 		dagger_instance.position = dagger_pos
 		
 		print("Spawned dagger at ", dagger_pos)
+	
+	# Spawn torch in the first room near the sword
+	var torch_instance = TORCH_SCENE.instantiate()
+	add_child(torch_instance)
+	
+	var torch_pos = room_centers[0]
+	torch_pos.x -= 2.0  # Offset from center in other direction from sword
+	torch_pos.y += 0.5  # Slightly above floor
+	torch_instance.position = torch_pos
+	
+	print("Spawned torch at ", torch_pos)
+	print("=== TORCH USAGE ===")
+	print("- Press E to pick up the torch")
+	print("- Press L to light/extinguish the torch when equipped")
+	print("- The torch provides light when lit and has limited burn time")
+	print("=====================")
